@@ -125,6 +125,49 @@ export default function WorkforceTab() {
     };
   }, [fd.latestYear]);
 
+  const turnoverConfig = useMemo(() => {
+    const labels = D.years;
+    return {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: D.companies.map((co, i) => ({
+          label: co,
+          data: labels.map(y => Math.round((D.turnoverByCompany[co]?.[y] || 0) * 1000) / 10),
+          backgroundColor: COLORS[i],
+          borderRadius: 4,
+        })),
+      },
+      options: {
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } },
+        scales: { y: { beginAtZero: true, title: { display: true, text: '%' } } },
+      },
+    };
+  }, []);
+
+  const turnoverLineConfig = useMemo(() => {
+    const labels = D.years;
+    return {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: '그룹 이직률',
+          data: labels.map(y => Math.round((D.turnover?.[y] || 0) * 1000) / 10),
+          borderColor: ACCENT,
+          backgroundColor: 'rgba(232,87,42,0.1)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+        }],
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, title: { display: true, text: '%' } } },
+      },
+    };
+  }, []);
+
   const avgAgeConfig = useMemo(() => {
     const labels = D.companies;
     const data = labels.map(co => D.avgAge?.[co] || 0);
@@ -184,10 +227,16 @@ export default function WorkforceTab() {
         <ChartCard title="성별 구성" subtitle="2025 기준" config={genderConfig} />
       </div>
 
-      {/* Charts Row 4 */}
+      {/* Charts Row 4: 이직률 */}
+      <div className="chart-grid chart-grid-2">
+        <ChartCard title="그룹 이직률 추이" subtitle="전체 이직률 (%)" config={turnoverLineConfig} />
+        <ChartCard title="법인별 이직률" subtitle="연도별 법인별 이직률 (%)" config={turnoverConfig} />
+      </div>
+
+      {/* Charts Row 5 */}
       <div className="chart-grid chart-grid-2">
         <ChartCard title="평균연령" subtitle="법인별 평균 연령 (2025)" config={avgAgeConfig} />
-        <div /> {/* placeholder */}
+        <div />
       </div>
 
       {/* Table */}

@@ -25,10 +25,11 @@ export function useFilteredData() {
     }, 0);
     const yoy = prevHeadcount > 0 ? ((totalHeadcount - prevHeadcount) / prevHeadcount * 100).toFixed(1) : 0;
 
-    // 이직률
-    const turnoverRate = company === 'ALL'
-      ? (D.turnoverByCompany?.['그룹']?.[latestYear] || 0)
+    // 이직률 (비율→퍼센트 변환)
+    const turnoverRaw = company === 'ALL'
+      ? (D.turnover?.[latestYear] || 0)
       : (D.turnoverByCompany?.[company]?.[latestYear] || 0);
+    const turnoverRate = (turnoverRaw * 100).toFixed(1);
 
     // 인건비
     const totalLaborCost = companies.reduce((sum, co) => {
