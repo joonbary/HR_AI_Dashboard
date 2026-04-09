@@ -1,0 +1,425 @@
+/* ── OK금융그룹 Design Tokens ── */
+:root {
+  --bg: #FFFFFF;
+  --bg-subtle: #F8F8F8;
+  --bg-card: #FFFFFF;
+  --divider: #E5E5E5;
+
+  --text-primary: #111111;
+  --text-body: #444444;
+  --text-muted: #999999;
+
+  --accent: #E8572A;
+  --accent-light: rgba(232,87,42,0.08);
+  --accent-hover: #D14A20;
+  --ok-gold: #FCAF17;
+  --ok-dark: #353C41;
+  --ok-orange: #F77310;
+
+  --grade-s: #E8572A;
+  --grade-a: #F77310;
+  --grade-b: #FCAF17;
+  --grade-c: #7AB648;
+  --grade-d: #999999;
+
+  --risk-high: #E74C3C;
+  --risk-mid: #F39C12;
+  --risk-low: #2ECC71;
+
+  --radius: 8px;
+  --radius-sm: 4px;
+  --shadow: 0 1px 4px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.1);
+
+  --topbar-h: 52px;
+  --filterbar-h: 44px;
+  --copilot-w: 360px;
+
+  --font-main: 'Pretendard', '맑은 고딕', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+}
+
+/* ── Dark mode (future) ── */
+[data-theme="dark"] {
+  --bg: #1A1A2E;
+  --bg-subtle: #16213E;
+  --bg-card: #1F2940;
+  --divider: #2D3748;
+  --text-primary: #F0F0F0;
+  --text-body: #CBD5E0;
+  --text-muted: #718096;
+  --shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-main);
+  background: var(--bg-subtle);
+  color: var(--text-body);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Layout Shell ── */
+.shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.shell-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: margin-right 0.3s ease;
+}
+
+.shell-main.copilot-open {
+  margin-right: var(--copilot-w);
+}
+
+.content-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+/* ── TopBar ── */
+.topbar {
+  height: var(--topbar-h);
+  background: var(--bg);
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topbar-logo {
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--accent);
+  white-space: nowrap;
+  margin-right: 16px;
+}
+
+.topbar-tabs {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  overflow-x: auto;
+}
+
+.topbar-tab {
+  padding: 6px 14px;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.topbar-tab:hover { background: var(--accent-light); color: var(--text-body); }
+.topbar-tab.active { background: var(--accent); color: #fff; font-weight: 600; }
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* ── FilterBar ── */
+.filterbar {
+  height: var(--filterbar-h);
+  background: var(--bg);
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 10px;
+}
+
+.filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filter-select {
+  padding: 4px 10px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  background: var(--bg);
+  color: var(--text-body);
+  outline: none;
+}
+
+.filter-select:focus { border-color: var(--accent); }
+
+.filter-chip {
+  padding: 4px 12px;
+  border: 1px solid var(--divider);
+  border-radius: 20px;
+  background: var(--bg);
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filter-chip:hover { border-color: var(--accent); color: var(--accent); }
+.filter-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ── KPI Row ── */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+}
+
+.kpi-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+.kpi-value { font-size: 26px; font-weight: 700; color: var(--text-primary); margin: 4px 0 2px; }
+.kpi-sub { font-size: 11px; color: var(--text-muted); }
+.kpi-sub.up { color: var(--risk-high); }
+.kpi-sub.down { color: var(--risk-low); }
+
+/* ── Chart Grid & Cards ── */
+.chart-grid {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.chart-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.chart-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.chart-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.chart-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.chart-wrap { position: relative; }
+.chart-wrap.h240 { height: 240px; }
+.chart-wrap.h280 { height: 280px; }
+
+/* ── Data Table ── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 12px;
+}
+
+.data-table thead th {
+  background: var(--ok-dark);
+  color: #fff;
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 400;
+  font-size: 11px;
+}
+
+.data-table tbody td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.data-table tbody tr:hover { background: var(--accent-light); }
+
+/* ── Section Title ── */
+.section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 20px 0 8px;
+  padding-left: 8px;
+  border-left: 3px solid var(--accent);
+}
+
+/* ── Copilot Panel ── */
+.copilot-panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: var(--copilot-w);
+  height: 100vh;
+  background: var(--bg);
+  border-left: 1px solid var(--divider);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  z-index: 200;
+}
+
+.copilot-panel.open { transform: translateX(0); }
+
+.copilot-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.copilot-header h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.copilot-history {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px;
+}
+
+.copilot-input-wrap {
+  padding: 12px 16px;
+  border-top: 1px solid var(--divider);
+  display: flex;
+  gap: 8px;
+}
+
+.copilot-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  font-size: 13px;
+  resize: none;
+  outline: none;
+  font-family: var(--font-main);
+}
+
+.copilot-input:focus { border-color: var(--accent); }
+
+.copilot-send {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ── Buttons ── */
+.btn {
+  padding: 6px 14px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent-hover); }
+
+/* ── Insight Cards ── */
+.insight-list { list-style: none; }
+
+.insight-item {
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  box-shadow: var(--shadow);
+}
+
+.insight-item .insight-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  display: flex;
+  gap: 8px;
+}
+
+.insight-item .insight-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.insight-item .insight-body {
+  font-size: 12px;
+  color: var(--text-body);
+  line-height: 1.6;
+}
+
+/* ── Org Chart ── */
+.org-controls {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.org-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.org-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ── Responsive ── */
+@media (max-width: 1200px) {
+  .chart-grid-2 { grid-template-columns: 1fr; }
+  .chart-grid-3 { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 768px) {
+  .topbar-tabs { display: none; }
+  .filterbar { flex-wrap: wrap; height: auto; padding: 8px 12px; }
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+  .copilot-panel { width: 100vw; }
+  .shell-main.copilot-open { margin-right: 0; }
+}
