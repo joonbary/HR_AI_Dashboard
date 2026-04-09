@@ -128,6 +128,67 @@ npm run preview      # 빌드 결과 미리보기
 
 ---
 
+## 개발 컨벤션
+
+### 브랜치 전략
+
+| 브랜치 | 용도 | 머지 대상 |
+|--------|------|-----------|
+| `main` | 프로덕션 (GitHub Pages 배포) | — |
+| `dev` | 개발 통합 | → main (안정화 후) |
+| `feature/*` | 기능 개발 | → dev |
+| `hotfix/*` | 긴급 수정 | → main + dev |
+
+- `main` 직접 커밋 금지 — PR을 통해서만 머지
+- 브랜치명 예시: `feature/dark-mode`, `feature/copilot-api`, `hotfix/chart-render-fix`
+
+### 커밋 메시지
+
+```
+[타입] 한글 요약 (50자 이내)
+
+상세 설명 (필요 시)
+```
+
+| 타입 | 용도 |
+|------|------|
+| `feat` | 새 기능 |
+| `fix` | 버그 수정 |
+| `refactor` | 리팩토링 (기능 변경 없음) |
+| `style` | CSS/UI 변경 |
+| `data` | 데이터 파일 추가/수정 |
+| `docs` | 문서 수정 |
+| `chore` | 빌드/설정 변경 |
+
+예시: `[feat] 다크모드 토글 구현`, `[fix] 조직도 트리 렌더링 오류 수정`
+
+### 코드 스타일
+
+- **컴포넌트**: React FC (함수형), PascalCase 파일명 (`WorkforceTab.jsx`)
+- **훅**: `use` 접두어, camelCase (`useFilteredData.js`)
+- **데이터**: camelCase 파일명 (`dashboardData.js`)
+- **상수**: UPPER_SNAKE_CASE (`ORG_TREE_DATA`)
+- **CSS**: CSS Variables 기반, BEM 불필요 (theme.css 중앙 관리)
+- **차트**: ChartCard 래퍼 사용, 직접 Canvas 조작 금지
+- **상태**: Zustand useStore 통해서만 글로벌 상태 관리
+
+### PR 프로세스
+
+1. `feature/*` 브랜치에서 작업
+2. `npm run build` 성공 확인
+3. PR 생성 → 변경 사항 요약 + 스크린샷 (UI 변경 시)
+4. `dev`로 머지 → 통합 테스트
+5. `dev` → `main` 머지 → GitHub Pages 자동 배포
+
+### 금지 사항
+
+- `node_modules/`, `dist/` 커밋 금지 (.gitignore 관리)
+- 개인정보 포함 데이터(사원명부 원본, 급여 데이터) 커밋 절대 금지
+- API 키, 토큰 등 시크릿 하드코딩 금지
+- `console.log` 프로덕션 커밋 금지 (디버깅 후 제거)
+
+---
+
 ## 주의사항
 
 - 법인명: OK홀딩스 (OK금융지주 ✕), OKAX (OK아이에스 ✕)
