@@ -20,7 +20,7 @@ export default function PerformanceTab() {
         labels: D.years,
         datasets: grades.map(g => ({
           label: g,
-          data: D.years.map(y => D.evalDist[g]?.[y] || 0),
+          data: D.years.map(y => Math.round((D.evalDist[g]?.[y] || 0) * 1000) / 10),
           backgroundColor: GRADE_COLORS[g] || '#999',
         })),
       },
@@ -34,7 +34,7 @@ export default function PerformanceTab() {
       labels: D.years,
       datasets: [{
         label: 'A이상 비율',
-        data: D.years.map(y => D.aAbove?.[y] || 0),
+        data: D.years.map(y => Math.round((D.aAbove?.[y] || 0) * 1000) / 10),
         borderColor: '#E8572A',
         backgroundColor: 'rgba(232,87,42,0.1)',
         fill: true,
