@@ -6,7 +6,7 @@ import {
 } from '../../data/personnelData';
 import GradeDistChart from './GradeDistChart';
 
-const DIVISIONS = ['전체', ...new Set(CANDIDATES.map((c) => c.entity))];
+const ENTITIES = ['전체', ...new Set(CANDIDATES.map((c) => c.entity))];
 const ORG_GRADES = ['S', 'A+', 'A', 'B+', 'B', 'C', 'D'];
 const CAL_PAGE_SIZE = 100;
 
@@ -18,11 +18,55 @@ export default function CalibrationView() {
   } = usePersonnelStore();
 
   const [calPage, setCalPage] = useState(0);
+  const [selectedDept, setSelectedDept] = useState('전체');
+  const [selectedDiv, setSelectedDiv] = useState('전체');
 
-  const divisionCandidates = useMemo(() => {
+  // 회사 선택 시 본부·부 필터 초기화
+  const handleEntityChange = (v) => {
+    setSelectedDivision(v);
+    setSelectedDept('전체');
+    setSelectedDiv('전체');
+    setCalPage(0);
+  };
+  const handleDeptChange = (v) => {
+    setSelectedDept(v);
+    setSelectedDiv('전체');
+    setCalPage(0);
+  };
+  const handleDivChange = (v) => {
+    setSelectedDiv(v);
+    setCalPage(0);
+  };
+
+  // 회사 기준 필터링
+  const entityCandidates = useMemo(() => {
     if (selectedDivision === '전체') return CANDIDATES;
     return CANDIDATES.filter((c) => c.entity === selectedDivision);
   }, [selectedDivision]);
+
+  // 본부 옵션 (선택된 회사 기준)
+  const deptOptions = useMemo(() => {
+    const depts = [...new Set(entityCandidates.map(c => c.dept).filter(Boolean))].sort();
+    return ['전체', ...depts];
+  }, [entityCandidates]);
+
+  // 본부 기준 필터링
+  const deptCandidates = useMemo(() => {
+    if (selectedDept === '전체') return entityCandidates;
+    return entityCandidates.filter(c => c.dept === selectedDept);
+  }, [entityCandidates, selectedDept]);
+
+  // 부 옵션 (선택된 본부 기준)
+  const divOptions = useMemo(() => {
+    const divs = [...new Set(deptCandidates.map(c => c.division).filter(d => d && d !== '-'))].sort();
+    return ['전체', ...divs];
+  }, [deptCandidates]);
+
+  // 최종 필터링된 후보자
+  const divisionCandidates = useMemo(() => {
+    if (selectedDiv === '전체') return deptCandidates;
+    return deptCandidates.filter(c => c.division === selectedDiv);
+  }, [deptCandidates, selectedDiv]);
 
   const originalGrades = useMemo(
     () => Object.fromEntries(CANDIDATES.map((c) => [c.id, c.finalGrade])), []
@@ -84,10 +128,24 @@ export default function CalibrationView() {
         backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius)',
         border: '1px solid var(--divider)', alignItems: 'center', flexWrap: 'wrap',
       }}>
-        <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)' }}>조직:</span>
-        <select value={selectedDivision} onChange={(e) => setSelectedDivision(e.target.value)} style={selectStyle}>
-          {DIVISIONS.map((div) => <option key={div} value={div}>{div}</option>)}
+        <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)' }}>회사:</span>
+        <select value={selectedDivision} onChange={(e) => handleEntityChange(e.target.value)} style={selectStyle}>
+          {ENTITIES.map((div) => <option key={div} value={div}>{div}</option>)}
         </select>
+
+        <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)', marginLeft: '8px' }}>본부:</span>
+        <select value={selectedDept} onChange={(e) => handleDeptChange(e.target.value)} style={selectStyle}>
+          {deptOptions.map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
+
+        {divOptions.length > 1 && (
+          <>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)', marginLeft: '8px' }}>부:</span>
+            <select value={selectedDiv} onChange={(e) => handleDivChange(e.target.value)} style={selectStyle}>
+              {divOptions.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </>
+        )}
 
         <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)', marginLeft: '12px' }}>조직평가:</span>
         <select value={orgEvalGrade} onChange={(e) => setOrgEvalGrade(e.target.value)} style={selectStyle}>
