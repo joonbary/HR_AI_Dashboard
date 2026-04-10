@@ -37,35 +37,22 @@ export default function CandidateExplorer() {
     []
   );
 
-  // Table columns
-  const tableColumns = [
-    { key: 'name', label: '이름', width: '80px' },
-    { key: 'entity', label: '법인', width: '100px' },
-    { key: 'dept', label: '부서', width: '100px' },
-    { key: 'jobType', label: '직종', width: '100px' },
-    { key: 'level', label: '레벨', width: '80px' },
-    { key: 'grade', label: '등급', width: '60px' },
-    { key: 'c', label: 'C', width: '50px', render: (c) => c.cei.c },
-    { key: 'e', label: 'E', width: '50px', render: (c) => c.cei.e },
-    { key: 'i', label: 'I', width: '50px', render: (c) => c.cei.i },
-    { key: 'eligible', label: '자격', width: '50px', render: (c) => (c.eligible ? '✓' : '-') },
-    { key: 'aiScore', label: 'AI', width: '50px', render: (c) => `${c.aiScore}★` },
-  ];
+  // Table headers & rows for DataTable (headers: string[], rows: string[][])
+  const tableHeaders = ['이름', '법인', '부서', '직종', '레벨', '등급', 'C', 'E', 'I', '자격', 'AI'];
 
-  const tableData = filtered.map((c) => ({
-    id: c.id,
-    name: c.name,
-    entity: c.entity,
-    dept: c.dept,
-    jobType: c.jobType,
-    level: c.level,
-    grade: c.grade,
-    c: c,
-    e: c,
-    i: c,
-    eligible: c,
-    aiScore: c,
-  }));
+  const tableRows = filtered.map((c) => [
+    c.name,
+    c.entity,
+    c.dept,
+    c.jobType,
+    c.level,
+    c.grade,
+    String(c.cei.c),
+    String(c.cei.e),
+    String(c.cei.i),
+    c.eligible ? '✓' : '-',
+    `${c.aiScore}★`,
+  ]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: '100%' }}>
@@ -235,7 +222,7 @@ export default function CandidateExplorer() {
         </div>
       ) : (
         <div style={{ flex: 1, overflow: 'auto' }}>
-          <DataTable columns={tableColumns} data={tableData} />
+          <DataTable headers={tableHeaders} rows={tableRows} />
         </div>
       )}
     </div>
