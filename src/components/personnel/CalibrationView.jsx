@@ -77,7 +77,7 @@ export default function CalibrationView() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Controls */}
       <div style={{
         display: 'flex', gap: '12px', padding: '12px 16px',
@@ -139,7 +139,7 @@ export default function CalibrationView() {
 
       {/* Editable Grade Table */}
       <div style={{
-        flex: 1, overflow: 'auto', padding: '16px',
+        overflow: 'auto', padding: '16px',
         backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius)',
         border: '1px solid var(--divider)',
       }}>
