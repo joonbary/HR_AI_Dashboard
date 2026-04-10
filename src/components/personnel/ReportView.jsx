@@ -1,240 +1,169 @@
 import usePersonnelStore from '../../store/personnelStore';
-import { CANDIDATES } from '../../data/personnelData';
+import { CANDIDATES, SCENARIOS, ACTION_TYPES, BENCHMARK_26H1 } from '../../data/personnelData';
 import KpiCard from '../common/KpiCard';
 
 export default function ReportView() {
-  const { reportView, setReportView } = usePersonnelStore();
+  const { reportView, setReportView, activeScenario } = usePersonnelStore();
+  const scenario = SCENARIOS[activeScenario] || SCENARIOS[0];
 
-  // Mock data for report
-  const topPromotees = CANDIDATES.filter((c) => c.grade === 'S' || c.grade === 'A+').slice(0, 3);
-  const promotionRate = ((3 / CANDIDATES.length) * 100).toFixed(1);
-  const avgSalaryImpact = 2.5; // 억원
+  const promotees = scenario.actions
+    .filter(a => a.type === 'promotion')
+    .map(a => ({ ...a, candidate: CANDIDATES.find(c => c.id === a.candidateId) }))
+    .filter(a => a.candidate);
+
+  const totalActions = scenario.actions.length;
+  const promoCount = scenario.actions.filter(a => a.type === 'promotion').length;
+  const removalCount = scenario.actions.filter(a => a.type === 'removal').length;
+  const promotionRate = ((promoCount / CANDIDATES.length) * 100).toFixed(1);
+  const salaryImpact = (promoCount * 2500 + scenario.actions.filter(a => a.type === 'elevation').length * 1500) / 10000;
+
+  // 유형별 집계
+  const typeSummary = ACTION_TYPES.map(t => ({
+    ...t,
+    count: scenario.actions.filter(a => a.type === t.id).length,
+  })).filter(t => t.count > 0);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: '100%' }}>
       {/* View Toggle */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '8px',
-          padding: '12px 16px',
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: 'var(--radius)',
-          border: '1px solid var(--divider)',
-        }}
-      >
-        <button
-          onClick={() => setReportView('ceo')}
-          style={{
-            padding: '6px 14px',
-            borderRadius: 'var(--radius-sm)',
-            border: reportView === 'ceo' ? 'none' : '1px solid var(--divider)',
-            backgroundColor: reportView === 'ceo' ? 'var(--accent)' : 'var(--bg)',
-            color: reportView === 'ceo' ? '#fff' : 'var(--text-body)',
-            fontSize: '12px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.15s',
-          }}
-        >
-          👔 대표이사 뷰
-        </button>
-        <button
-          onClick={() => setReportView('owner')}
-          style={{
-            padding: '6px 14px',
-            borderRadius: 'var(--radius-sm)',
-            border: reportView === 'owner' ? 'none' : '1px solid var(--divider)',
-            backgroundColor: reportView === 'owner' ? 'var(--accent)' : 'var(--bg)',
-            color: reportView === 'owner' ? '#fff' : 'var(--text-body)',
-            fontSize: '12px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.15s',
-          }}
-        >
-          🎯 오너 뷰
-        </button>
+      <div style={{
+        display: 'flex', gap: '8px', padding: '12px 16px',
+        backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius)', border: '1px solid var(--divider)',
+      }}>
+        {[
+          { id: 'ceo', label: '👔 대표이사 뷰' },
+          { id: 'owner', label: '🎯 오너 뷰' },
+        ].map(v => (
+          <button key={v.id} onClick={() => setReportView(v.id)} style={{
+            padding: '6px 14px', borderRadius: 'var(--radius-sm)',
+            border: reportView === v.id ? 'none' : '1px solid var(--divider)',
+            backgroundColor: reportView === v.id ? 'var(--accent)' : 'var(--bg)',
+            color: reportView === v.id ? '#fff' : 'var(--text-body)',
+            fontSize: '12px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s',
+          }}>{v.label}</button>
+        ))}
+        <div style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--text-muted)' }}>
+          시나리오 「{scenario.name}」 · 총 {totalActions}건
+        </div>
       </div>
 
-      {/* Content Area */}
       {reportView === 'ceo' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, overflow: 'auto' }}>
           {/* Executive Summary */}
-          <div
-            style={{
-              padding: '16px',
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--divider)',
-            }}
-          >
+          <div style={{
+            padding: '16px', backgroundColor: 'var(--bg-card)',
+            borderRadius: 'var(--radius)', border: '1px solid var(--divider)',
+          }}>
             <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '8px' }}>
               📋 Executive Summary
             </div>
             <div style={{ fontSize: '12px', lineHeight: '1.6', color: 'var(--text-body)' }}>
-              2026 하반기 정기인사는 <strong>AI 전환 인력의 전략적 승진</strong>을 핵심으로 추진합니다.
-              고성과자 3명의 과장 승진과 저성과 임원 1명의 직책해제로, 조직의 역동성과 신뢰도를 동시에 강화할 것으로 예상됩니다.
+              2026 하반기 정기인사 「{scenario.name}」안은 <strong>AI 전환 인력의 전략적 승진</strong>과
+              <strong> 세대교체</strong>를 핵심으로 추진합니다.
+              승진 {promoCount}명, 직책해제 {removalCount}명을 포함한 총 {totalActions}건의 인사로
+              조직 역동성을 강화합니다.
+              26상 실적(508명) 대비 정밀 타겟형으로 전환하여 핵심 인재에 집중합니다.
             </div>
           </div>
 
           {/* KPI Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-            <KpiCard
-              label="승진 인원"
-              value={3}
-              unit="명"
-              color="var(--risk-low)"
-            />
-            <KpiCard
-              label="승진율"
-              value={promotionRate}
-              unit="%"
-              color="var(--ok-orange)"
-            />
-            <KpiCard
-              label="인건비 증가"
-              value={avgSalaryImpact}
-              unit="억원"
-              color="var(--risk-mid)"
-            />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+            <KpiCard label="승진 인원" value={promoCount} unit="명" color="var(--risk-low)" />
+            <KpiCard label="승진율" value={promotionRate} unit="%" color="var(--ok-orange)" />
+            <KpiCard label="인건비 증가" value={salaryImpact.toFixed(1)} unit="억원" color="var(--risk-mid)" />
+            <KpiCard label="총 인사건수" value={totalActions} unit="건" color="var(--accent)" />
           </div>
 
-          {/* Top Promotees Cards */}
-          <div style={{ marginTop: '8px' }}>
+          {/* 유형별 요약 */}
+          <div style={{
+            padding: '16px', backgroundColor: 'var(--bg-card)',
+            borderRadius: 'var(--radius)', border: '1px solid var(--divider)',
+          }}>
             <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px' }}>
-              🌟 주요 승진 대상자
+              📊 유형별 현황
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-              {topPromotees.map((p) => (
-                <div
-                  key={p.id}
-                  style={{
-                    padding: '12px',
-                    backgroundColor: 'var(--bg-card)',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--divider)',
-                  }}
-                >
-                  <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '4px' }}>
-                    {p.name}
-                  </div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                    {p.division}
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: '6px',
-                      fontSize: '10px',
-                    }}
-                  >
-                    <span
-                      style={{
-                        backgroundColor: 'var(--accent)',
-                        color: '#fff',
-                        padding: '2px 6px',
-                        borderRadius: '3px',
-                        fontWeight: '600',
-                      }}
-                    >
-                      {p.grade}
-                    </span>
-                    <span
-                      style={{
-                        backgroundColor: 'var(--bg-subtle)',
-                        color: 'var(--text-body)',
-                        padding: '2px 6px',
-                        borderRadius: '3px',
-                      }}
-                    >
-                      {p.title} → 과장
-                    </span>
-                  </div>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              {typeSummary.map(t => (
+                <div key={t.id} style={{
+                  padding: '10px 16px', borderRadius: 'var(--radius-sm)',
+                  border: `1px solid ${t.color}40`, backgroundColor: `${t.color}10`,
+                  textAlign: 'center', minWidth: '80px',
+                }}>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t.icon} {t.label}</div>
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: t.color }}>{t.count}</div>
                 </div>
               ))}
             </div>
           </div>
 
+          {/* 주요 승진 대상자 */}
+          {promotees.length > 0 && (
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px' }}>
+                🌟 주요 승진 대상자
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(promotees.length, 3)}, 1fr)`, gap: '12px' }}>
+                {promotees.slice(0, 3).map((p) => (
+                  <div key={p.candidateId} style={{
+                    padding: '12px', backgroundColor: 'var(--bg-card)',
+                    borderRadius: 'var(--radius-sm)', border: '1px solid var(--divider)',
+                  }}>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '4px' }}>
+                      {p.candidate.name}
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                      {p.candidate.entity} · {p.candidate.division}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', fontSize: '10px' }}>
+                      <span style={{
+                        backgroundColor: 'var(--accent)', color: '#fff',
+                        padding: '2px 6px', borderRadius: '3px', fontWeight: '600',
+                      }}>{p.candidate.finalGrade}</span>
+                      <span style={{
+                        backgroundColor: 'var(--bg-subtle)', color: 'var(--text-body)',
+                        padding: '2px 6px', borderRadius: '3px',
+                      }}>{p.from} → {p.to}</span>
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px' }}>{p.reason}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '12px',
-              marginTop: 'auto',
-              paddingTop: '16px',
-              borderTop: '1px solid var(--divider)',
-            }}
-          >
-            <button
-              style={{
-                flex: 1,
-                padding: '10px 16px',
-                backgroundColor: 'var(--risk-low)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '12px',
-                fontWeight: '600',
-                cursor: 'pointer',
-              }}
-            >
-              ✓ 승인
-            </button>
-            <button
-              style={{
-                flex: 1,
-                padding: '10px 16px',
-                backgroundColor: 'transparent',
-                color: 'var(--risk-mid)',
-                border: '1px solid var(--risk-mid)',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '12px',
-                fontWeight: '600',
-                cursor: 'pointer',
-              }}
-            >
-              ⏸ 보류
-            </button>
-            <button
-              style={{
-                flex: 1,
-                padding: '10px 16px',
-                backgroundColor: 'transparent',
-                color: 'var(--accent)',
-                border: '1px solid var(--accent)',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '12px',
-                fontWeight: '600',
-                cursor: 'pointer',
-              }}
-            >
-              ↺ 수정
-            </button>
+          <div style={{
+            display: 'flex', gap: '12px', marginTop: 'auto', paddingTop: '16px',
+            borderTop: '1px solid var(--divider)',
+          }}>
+            {[
+              { label: '✓ 승인', bg: 'var(--risk-low)', color: '#fff', border: 'none' },
+              { label: '⏸ 보류', bg: 'transparent', color: 'var(--risk-mid)', border: '1px solid var(--risk-mid)' },
+              { label: '↺ 수정', bg: 'transparent', color: 'var(--accent)', border: '1px solid var(--accent)' },
+            ].map(btn => (
+              <button key={btn.label} style={{
+                flex: 1, padding: '10px 16px', backgroundColor: btn.bg,
+                color: btn.color, border: btn.border, borderRadius: 'var(--radius-sm)',
+                fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+              }}>{btn.label}</button>
+            ))}
           </div>
         </div>
       ) : (
+        /* Owner View */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, overflow: 'auto' }}>
-          {/* One-page Summary */}
-          <div
-            style={{
-              padding: '20px',
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: 'var(--radius)',
-              border: '2px solid var(--ok-orange)',
-              minHeight: '400px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
-            }}
-          >
+          <div style={{
+            padding: '20px', backgroundColor: 'var(--bg-card)',
+            borderRadius: 'var(--radius)', border: '2px solid var(--ok-orange)',
+            minHeight: '400px', display: 'flex', flexDirection: 'column', gap: '16px',
+          }}>
             <div style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)' }}>
               2026 하반기 정기인사 — 오너 보고
             </div>
 
             <div style={{ fontSize: '12px', color: 'var(--text-body)', lineHeight: '1.6' }}>
-              <strong>개요:</strong> 총 8명 대상자 중 적격자 5명 선정.
-              승진 3명(이서연·김민수·한소희), 직책해제 1명(오태현)으로 인사개편 추진.
+              <strong>개요:</strong> 시나리오 「{scenario.name}」 — 총 {totalActions}건.
+              승진 {promoCount}명, 직책해제 {removalCount}명으로 인사 개편 추진.
             </div>
 
             <div>
@@ -242,72 +171,45 @@ export default function ReportView() {
                 주요 지표
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px' }}>
-                <div>
-                  <span style={{ color: 'var(--text-muted)' }}>• 승진율:</span>{' '}
-                  <strong>{promotionRate}%</strong> (평년 대비 +0.5%p)
-                </div>
-                <div>
-                  <span style={{ color: 'var(--text-muted)' }}>• 인건비:</span>{' '}
-                  <strong>+{avgSalaryImpact}억원</strong> (연 1%)
-                </div>
+                <div><span style={{ color: 'var(--text-muted)' }}>• 승진율:</span> <strong>{promotionRate}%</strong></div>
+                <div><span style={{ color: 'var(--text-muted)' }}>• 인건비:</span> <strong>+{salaryImpact.toFixed(1)}억원</strong></div>
+                <div><span style={{ color: 'var(--text-muted)' }}>• 26상 대비:</span> <strong>{totalActions}/{BENCHMARK_26H1.grandTotal}건</strong></div>
+                <div><span style={{ color: 'var(--text-muted)' }}>• 직군:</span> <strong>PL {scenario.actions.filter(a => { const c = CANDIDATES.find(x => x.id === a.candidateId); return c?.jobFamily === 'PL'; }).length}명 / Non-PL {scenario.actions.filter(a => { const c = CANDIDATES.find(x => x.id === a.candidateId); return c?.jobFamily === 'Non-PL'; }).length}명</strong></div>
               </div>
             </div>
 
             <div>
               <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                리스크 &amp; 주의사항
+                리스크 & 주의사항
               </div>
-              <ul style={{ fontSize: '11px', color: 'var(--text-body)', marginLeft: '14px', lineHeight: '1.4' }}>
-                <li>오태현(B 등급) 직책해제: 노조 협의 필수</li>
-                <li>외부 영입 제한으로 인한 신입 배치 지연 관찰</li>
+              <ul style={{ fontSize: '11px', color: 'var(--text-body)', marginLeft: '14px', lineHeight: '1.5' }}>
+                {removalCount > 0 && <li>직책해제 {removalCount}건 — 노조 협의 및 소명 기회 부여 필수</li>}
+                <li>4B 기조 하 외부채용 제한으로 내부 승진 집중 — 핵심인재 이탈 방지 모니터링 필요</li>
+                <li>AI Fast-track(Track C) 적용 가능 대상 확인 필요</li>
               </ul>
             </div>
           </div>
 
-          {/* AI Copilot Prompt Area */}
-          <div
-            style={{
-              padding: '16px',
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--divider)',
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
+          {/* AI Copilot */}
+          <div style={{
+            padding: '16px', backgroundColor: 'var(--bg-card)',
+            borderRadius: 'var(--radius)', border: '1px solid var(--divider)', flex: 1,
+            display: 'flex', flexDirection: 'column',
+          }}>
             <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>
-              🤖 AI Copilot Prompt
+              🤖 AI Copilot
             </div>
-            <textarea
-              placeholder="자유로운 지시사항을 입력하세요. 예: '이 인사안의 리스크 분석 결과를 요약해줘'"
-              style={{
-                padding: '12px',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px solid var(--divider)',
-                backgroundColor: 'var(--bg)',
-                fontSize: '12px',
-                fontFamily: 'var(--font-main)',
-                color: 'var(--text-body)',
-                flex: 1,
-                resize: 'none',
-                marginBottom: '8px',
-              }}
-            />
-            <button
-              style={{
-                padding: '8px 14px',
-                backgroundColor: 'var(--accent)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '12px',
-                fontWeight: '600',
-                cursor: 'pointer',
-              }}
-            >
-              💬 질문하기
-            </button>
+            <textarea placeholder="질문을 입력하세요. 예: '이 인사안의 리스크 분석 결과를 요약해줘'" style={{
+              padding: '12px', borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--divider)', backgroundColor: 'var(--bg)',
+              fontSize: '12px', fontFamily: 'var(--font-main)', color: 'var(--text-body)',
+              flex: 1, resize: 'none', marginBottom: '8px',
+            }} />
+            <button style={{
+              padding: '8px 14px', backgroundColor: 'var(--accent)', color: '#fff',
+              border: 'none', borderRadius: 'var(--radius-sm)',
+              fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+            }}>💬 질문하기</button>
           </div>
         </div>
       )}

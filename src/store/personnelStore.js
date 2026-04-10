@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { CANDIDATES, INITIAL_DECISIONS, SCENARIOS } from '../data/personnelData';
+import { CANDIDATES, INITIAL_DECISIONS, checkEligibility } from '../data/personnelData';
 
 const usePersonnelStore = create((set, get) => ({
   // ── 서브탭 ──
@@ -14,6 +14,7 @@ const usePersonnelStore = create((set, get) => ({
   filterEntity: 'ALL',
   filterGrade: 'ALL',
   filterEligible: 'ALL',
+  filterJobFamily: 'ALL',
   searchText: '',
   viewMode: 'card',
   selectedCandidate: null,
@@ -21,14 +22,17 @@ const usePersonnelStore = create((set, get) => ({
   setFilterEntity: (v) => set({ filterEntity: v }),
   setFilterGrade: (v) => set({ filterGrade: v }),
   setFilterEligible: (v) => set({ filterEligible: v }),
+  setFilterJobFamily: (v) => set({ filterJobFamily: v }),
   setSearchText: (v) => set({ searchText: v }),
   setViewMode: (v) => set({ viewMode: v }),
   setSelectedCandidate: (id) => set({ selectedCandidate: id }),
 
   // ── Calibration ──
-  grades: Object.fromEntries(CANDIDATES.map(c => [c.id, c.grade])),
+  grades: Object.fromEntries(CANDIDATES.map(c => [c.id, c.finalGrade])),
   selectedDivision: '전체',
+  orgEvalGrade: 'A',  // 조직평가 등급 (기본값 A)
   setSelectedDivision: (v) => set({ selectedDivision: v }),
+  setOrgEvalGrade: (v) => set({ orgEvalGrade: v }),
   changeGrade: (id, newGrade) => {
     const { grades, addDecision } = get();
     const oldGrade = grades[id];
@@ -40,7 +44,7 @@ const usePersonnelStore = create((set, get) => ({
         time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
         type: '등급조정',
         subject: candidate.name,
-        detail: `${oldGrade}→${newGrade}`,
+        detail: `기초 ${candidate.baseGrade} → 최종 ${oldGrade} → ${newGrade}`,
         status: 'pending',
         by: 'Calibration 위원회',
       });
@@ -69,15 +73,26 @@ const usePersonnelStore = create((set, get) => ({
 
   // ── 필터된 후보자 계산 ──
   getFilteredCandidates: () => {
-    const { filterEntity, filterGrade, filterEligible, searchText } = get();
+    const { filterEntity, filterGrade, filterEligible, filterJobFamily, searchText } = get();
     return CANDIDATES.filter(c => {
       if (filterEntity !== 'ALL' && c.entity !== filterEntity) return false;
-      if (filterGrade !== 'ALL' && c.grade !== filterGrade) return false;
+      if (filterGrade !== 'ALL' && c.finalGrade !== filterGrade) return false;
+      if (filterJobFamily !== 'ALL' && c.jobFamily !== filterJobFamily) return false;
       if (filterEligible === 'eligible' && !c.eligible) return false;
       if (filterEligible === 'ineligible' && c.eligible) return false;
-      if (searchText && !c.name.includes(searchText) && !c.dept.includes(searchText) && !c.division.includes(searchText)) return false;
+      if (searchText) {
+        const q = searchText.toLowerCase();
+        if (!c.name.includes(q) && !c.dept.includes(q) && !c.division.includes(q) && !c.entity.includes(q) && !c.jobType.includes(q)) return false;
+      }
       return true;
     });
+  },
+
+  // ── 자격 판정 (checkEligibility 래퍼) ──
+  getEligibility: (candidateId) => {
+    const candidate = CANDIDATES.find(c => c.id === candidateId);
+    if (!candidate) return { eligible: false, reasons: ['대상자 미발견'] };
+    return checkEligibility(candidate);
   },
 }));
 

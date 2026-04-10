@@ -1,86 +1,62 @@
 import { GRADE_COLORS, GRADE_NUM } from '../../data/personnelData';
 
-export default function MiniSparkline({
-  data = [],
-  width = 80,
-  height = 24,
-}) {
-  if (!data || data.length === 0) {
-    return (
-      <div
-        style={{
-          width: `${width}px`,
-          height: `${height}px`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'var(--text-muted)',
-          fontSize: '10px',
-        }}
-      >
-        데이터 없음
-      </div>
-    );
-  }
+/**
+ * 평가 추이 스파크라인 — 기초등급 + 최종등급 표시
+ * history: [{ y, base, final }]
+ */
+export default function MiniSparkline({ history = [], width = 120, height = 32 }) {
+  if (!history.length) return null;
 
-  const padding = 4;
-  const innerWidth = width - padding * 2;
-  const innerHeight = height - padding * 2;
+  const pad = 4;
+  const plotW = width - pad * 2;
+  const plotH = height - pad * 2;
+  const step = history.length > 1 ? plotW / (history.length - 1) : 0;
 
-  // Normalize y values (1-7 for grades)
-  const minY = 1;
-  const maxY = 7;
-  const points = data.map((d, idx) => {
-    const x = (idx / Math.max(data.length - 1, 1)) * innerWidth + padding;
-    const yNorm = (d.y || GRADE_NUM[d.g] || 1 - minY) / (maxY - minY);
-    const y = height - (yNorm * innerHeight + padding);
-    return { x, y, grade: d.g };
-  });
+  const toY = (grade) => {
+    const num = GRADE_NUM[grade] || 3;
+    return plotH - ((num - 1) / 6) * plotH + pad;
+  };
 
-  // Build polyline
-  const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(' ');
+  const points = history.map((h, i) => ({
+    x: pad + i * step,
+    yFinal: toY(h.final),
+    yBase: toY(h.base),
+    year: h.y,
+    base: h.base,
+    final: h.final,
+  }));
+
+  // Final grade line
+  const lineFinal = points.map((p) => `${p.x},${p.yFinal}`).join(' ');
+  // Base grade line (dashed)
+  const lineBase = points.map((p) => `${p.x},${p.yBase}`).join(' ');
 
   return (
-    <svg
-      width={width}
-      height={height}
-      style={{ display: 'block' }}
-      viewBox={`0 0 ${width} ${height}`}
-    >
-      {/* Grid line at center */}
-      <line
-        x1={padding}
-        y1={height / 2}
-        x2={width - padding}
-        y2={height / 2}
-        stroke="var(--divider)"
-        strokeWidth="0.5"
-        strokeDasharray="2,2"
-        opacity="0.3"
-      />
-
-      {/* Polyline */}
-      <polyline
-        points={polylinePoints}
-        fill="none"
-        stroke="var(--accent)"
-        strokeWidth="1.5"
-        vectorEffect="non-scaling-stroke"
-      />
-
-      {/* Dots */}
-      {points.map((p, idx) => (
-        <circle
-          key={idx}
-          cx={p.x}
-          cy={p.y}
-          r="2"
-          fill={GRADE_COLORS[p.grade] || 'var(--accent)'}
-          stroke="#fff"
-          strokeWidth="0.5"
-          vectorEffect="non-scaling-stroke"
+    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+        {/* Base grade line (dashed, faint) */}
+        <polyline
+          points={lineBase} fill="none"
+          stroke="var(--divider)" strokeWidth="1" strokeDasharray="2,2"
         />
-      ))}
-    </svg>
+        {/* Final grade line */}
+        <polyline
+          points={lineFinal} fill="none"
+          stroke="var(--accent)" strokeWidth="1.5"
+        />
+        {/* Data points */}
+        {points.map((p, i) => (
+          <g key={i}>
+            <circle cx={p.x} cy={p.yFinal} r="3"
+              fill={GRADE_COLORS[p.final] || 'var(--accent)'}
+              stroke="#fff" strokeWidth="1"
+            />
+          </g>
+        ))}
+      </svg>
+      <div style={{ fontSize: '9px', color: 'var(--text-muted)', lineHeight: '1.2' }}>
+        {history.map((h) => `${String(h.y).slice(2)}: ${h.final}`).join(' → ')}
+      </div>
+    </div>
   );
 }

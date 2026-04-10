@@ -1,277 +1,177 @@
 import { useMemo } from 'react';
 import usePersonnelStore from '../../store/personnelStore';
-import { CANDIDATES, SCENARIOS } from '../../data/personnelData';
+import { CANDIDATES, SCENARIOS, ACTION_TYPES, BENCHMARK_26H1 } from '../../data/personnelData';
 import KpiCard from '../common/KpiCard';
 
 export default function HRPlanView() {
   const { activeScenario, setActiveScenario } = usePersonnelStore();
-
   const currentScenario = useMemo(() => SCENARIOS[activeScenario], [activeScenario]);
 
-  // Calculate metrics for current scenario
-  const metrics = useMemo(() => {
+  // 유형별 집계
+  const grouped = useMemo(() => {
     if (!currentScenario) return {};
-
-    const promotees = CANDIDATES.filter((c) => currentScenario.promotions.includes(c.id));
-    const transferees = CANDIDATES.filter((c) => currentScenario.transfers.includes(c.id));
-    const demoted = CANDIDATES.filter((c) => currentScenario.demotions.includes(c.id));
-
-    // Simple salary bump estimation (mock)
-    const avgSalaryIncrease = promotees.length * 25000000; // 2,500만원 per promotion
-
-    // Department headcount changes (mock)
-    const deptChanges = {};
-    CANDIDATES.forEach((c) => {
-      deptChanges[c.division] = (deptChanges[c.division] || 0) + 1;
+    const result = {};
+    ACTION_TYPES.forEach(t => { result[t.id] = []; });
+    currentScenario.actions.forEach(a => {
+      if (result[a.type]) {
+        const candidate = CANDIDATES.find(c => c.id === a.candidateId);
+        result[a.type].push({ ...a, candidate });
+      }
     });
-
-    return {
-      promotionCount: promotees.length,
-      transferCount: transferees.length,
-      demotionCount: demoted.length,
-      salaryImpact: avgSalaryIncrease,
-      deptChanges,
-      promotees,
-    };
+    return result;
   }, [currentScenario]);
 
+  // 시나리오 메트릭
+  const metrics = useMemo(() => {
+    if (!currentScenario) return {};
+    const promoCount = (grouped.promotion || []).length;
+    const payStepCount = (grouped.payStep || []).length;
+    const elevCount = (grouped.elevation || []).length;
+    const transCount = (grouped.transfer || []).length;
+    const removalCount = (grouped.removal || []).length;
+    const salaryImpact = promoCount * 2500 + elevCount * 1500; // 만원 단위
+    return { promoCount, payStepCount, elevCount, transCount, removalCount, total: currentScenario.actions.length, salaryImpact };
+  }, [currentScenario, grouped]);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%' }}>
       {/* Scenario Tabs */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '8px',
-          alignItems: 'center',
-          padding: '12px 16px',
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: 'var(--radius)',
-          border: '1px solid var(--divider)',
-        }}
-      >
+      <div style={{
+        display: 'flex', gap: '8px', alignItems: 'center', padding: '12px 16px',
+        backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius)', border: '1px solid var(--divider)',
+      }}>
         {SCENARIOS.map((scenario, idx) => (
-          <button
-            key={idx}
-            onClick={() => setActiveScenario(idx)}
-            style={{
-              padding: '6px 14px',
-              borderRadius: 'var(--radius-sm)',
-              border: activeScenario === idx ? 'none' : '1px solid var(--divider)',
-              backgroundColor: activeScenario === idx ? 'var(--accent)' : 'var(--bg)',
-              color: activeScenario === idx ? '#fff' : 'var(--text-body)',
-              fontSize: '12px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-          >
+          <button key={idx} onClick={() => setActiveScenario(idx)} style={{
+            padding: '6px 14px', borderRadius: 'var(--radius-sm)',
+            border: activeScenario === idx ? 'none' : '1px solid var(--divider)',
+            backgroundColor: activeScenario === idx ? 'var(--accent)' : 'var(--bg)',
+            color: activeScenario === idx ? '#fff' : 'var(--text-body)',
+            fontSize: '12px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s',
+          }}>
             {scenario.name}
           </button>
         ))}
-        <button
-          style={{
-            marginLeft: 'auto',
-            padding: '6px 14px',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--divider)',
-            backgroundColor: 'var(--bg)',
-            color: 'var(--accent)',
-            fontSize: '12px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.15s',
-          }}
-        >
-          + 시나리오 추가
-        </button>
+        <button style={{
+          marginLeft: 'auto', padding: '6px 14px', borderRadius: 'var(--radius-sm)',
+          border: '1px solid var(--divider)', backgroundColor: 'var(--bg)',
+          color: 'var(--accent)', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
+        }}>+ 시나리오 추가</button>
       </div>
 
-      {/* Main Content: Two-Column Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '16px', flex: 1 }}>
-        {/* Left Column: Lists */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflow: 'auto' }}>
-          {/* Promotions List */}
-          <div
-            style={{
-              padding: '12px',
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--divider)',
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>
-              승진 ({metrics.promotionCount || 0}명)
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {(metrics.promotees || []).map((p) => (
-                <div
-                  key={p.id}
-                  style={{
-                    padding: '6px 8px',
-                    backgroundColor: 'var(--bg)',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: '12px',
-                    color: 'var(--text-body)',
-                    border: '1px solid var(--risk-low)',
-                  }}
-                >
-                  {p.name} ({p.title} → 과장)
+      {/* KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
+        {ACTION_TYPES.map(t => (
+          <KpiCard key={t.id} label={t.label} value={grouped[t.id]?.length || 0} unit="명" color={t.color} />
+        ))}
+      </div>
+
+      {/* Main: Action Lists + Impact */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '16px', flex: 1, overflow: 'hidden' }}>
+        {/* Left: Action Lists */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflow: 'auto' }}>
+          {ACTION_TYPES.map(t => {
+            const items = grouped[t.id] || [];
+            if (items.length === 0) return null;
+            return (
+              <div key={t.id} style={{
+                padding: '12px', backgroundColor: 'var(--bg-card)',
+                borderRadius: 'var(--radius)', border: '1px solid var(--divider)',
+              }}>
+                <div style={{
+                  fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)',
+                  marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px',
+                }}>
+                  <span>{t.icon}</span> {t.label} ({items.length}명)
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Transfers List */}
-          <div
-            style={{
-              padding: '12px',
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--divider)',
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>
-              이동 ({metrics.transferCount || 0}명)
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {/* Mock transfer data */}
-              <div
-                style={{
-                  padding: '6px 8px',
-                  backgroundColor: 'var(--bg)',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '12px',
-                  color: 'var(--text-muted)',
-                }}
-              >
-                이동 대상자 없음
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {items.map((item, idx) => (
+                    <div key={idx} style={{
+                      padding: '6px 10px', backgroundColor: 'var(--bg)',
+                      borderRadius: 'var(--radius-sm)', fontSize: '12px',
+                      border: `1px solid ${t.color}30`, display: 'flex',
+                      justifyContent: 'space-between', alignItems: 'center',
+                    }}>
+                      <div>
+                        <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>
+                          {item.candidate?.name || item.candidateId}
+                        </span>
+                        <span style={{ color: 'var(--text-muted)', marginLeft: '8px' }}>
+                          {item.from} → {item.to}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{item.reason}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Demotions List */}
-          <div
-            style={{
-              padding: '12px',
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--divider)',
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>
-              직책해제 ({metrics.demotionCount || 0}명)
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {/* Mock demotion data */}
-              <div
-                style={{
-                  padding: '6px 8px',
-                  backgroundColor: 'var(--bg)',
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '12px',
-                  color: 'var(--text-muted)',
-                }}
-              >
-                직책해제 대상자 없음
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
-        {/* Right Column: Impact Cards */}
+        {/* Right: Impact & Benchmark */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflow: 'auto' }}>
-          {/* KPI Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <KpiCard
-              label="승진 인원"
-              value={metrics.promotionCount || 0}
-              unit="명"
-              color="var(--risk-low)"
-            />
-            <KpiCard
-              label="이동 인원"
-              value={metrics.transferCount || 0}
-              unit="명"
-              color="var(--risk-mid)"
-            />
-          </div>
-
-          {/* Salary Impact Card */}
-          <div
-            style={{
-              padding: '12px',
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--divider)',
-            }}
-          >
+          {/* 인건비 */}
+          <div style={{
+            padding: '12px', backgroundColor: 'var(--bg-card)',
+            borderRadius: 'var(--radius)', border: '1px solid var(--divider)',
+          }}>
             <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '4px' }}>
-              인건비 변동
+              예상 인건비 변동
             </div>
-            <div
-              style={{
-                fontSize: '18px',
-                fontWeight: '700',
-                color: 'var(--accent)',
-              }}
-            >
-              +{(metrics.salaryImpact / 100000000).toFixed(1)}억원
+            <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--accent)' }}>
+              +{(metrics.salaryImpact / 10000).toFixed(1)}억원
             </div>
           </div>
 
-          {/* Headcount Changes */}
-          <div
-            style={{
-              padding: '12px',
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--divider)',
-            }}
-          >
-            <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>
-              부서별 정원 변동
+          {/* 26상 벤치마크 */}
+          <div style={{
+            padding: '12px', backgroundColor: 'var(--bg-card)',
+            borderRadius: 'var(--radius)', border: '1px solid var(--divider)',
+          }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '8px' }}>
+              📊 26상 실적 벤치마크
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px' }}>
-              {Object.entries(metrics.deptChanges || {}).map(([dept, count]) => (
-                <div key={dept} style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-body)' }}>
-                  <span>{dept}</span>
-                  <span style={{ fontWeight: '600' }}>+{count}명</span>
-                </div>
-              ))}
+              {ACTION_TYPES.map(t => {
+                const benchKey = { promotion: 'promotion', payStep: 'payStep', elevation: 'elevation', transfer: 'transfer', removal: 'removal' }[t.id];
+                const bench = BENCHMARK_26H1.summary[benchKey];
+                if (!bench) return null;
+                const current = grouped[t.id]?.length || 0;
+                return (
+                  <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-body)' }}>
+                    <span>{t.icon} {t.label}</span>
+                    <span>
+                      <strong style={{ color: 'var(--text-primary)' }}>{current}명</strong>
+                      <span style={{ color: 'var(--text-muted)' }}> / 26상 {bench.total}명</span>
+                    </span>
+                  </div>
+                );
+              })}
+              <div style={{ borderTop: '1px solid var(--divider)', paddingTop: '4px', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: '600' }}>합계</span>
+                <span><strong>{metrics.total}명</strong> <span style={{ color: 'var(--text-muted)' }}>/ 26상 {BENCHMARK_26H1.grandTotal}명</span></span>
+              </div>
             </div>
           </div>
 
           {/* AI Executive Summary */}
-          <div
-            style={{
-              padding: '12px',
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--divider)',
-              flex: 1,
-              overflow: 'auto',
-            }}
-          >
+          <div style={{
+            padding: '12px', backgroundColor: 'var(--bg-card)',
+            borderRadius: 'var(--radius)', border: '1px solid var(--divider)', flex: 1,
+          }}>
             <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>
               🤖 AI Executive Summary
             </div>
-            <div
-              contentEditable
-              suppressContentEditableWarning
-              style={{
-                padding: '8px',
-                backgroundColor: 'var(--bg)',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '11px',
-                color: 'var(--text-body)',
-                minHeight: '80px',
-                border: '1px solid var(--divider)',
-                lineHeight: '1.4',
-              }}
-            >
+            <div contentEditable suppressContentEditableWarning style={{
+              padding: '8px', backgroundColor: 'var(--bg)', borderRadius: 'var(--radius-sm)',
+              fontSize: '11px', color: 'var(--text-body)', minHeight: '60px',
+              border: '1px solid var(--divider)', lineHeight: '1.5',
+            }}>
               {currentScenario?.name === '원안'
-                ? '승진 3명, 직책해제 1명으로 리스크 최소화. 인건비 증가는 연 2억 수준으로 관리 가능.'
-                : '대안1: 보수적 인사로 분쟁 위험 완화. 다만 고성과자 인센티브 효과 약화 우려.'}
+                ? `승진 ${metrics.promoCount}명, 승급 ${metrics.payStepCount}명, 승격 ${metrics.elevCount}명, 이동 ${metrics.transCount}명, 직책해제 ${metrics.removalCount}명으로 구성. 26상 대비 승진 규모 축소, AI 인재 전략적 배치에 집중. 인건비 증가는 연 ${(metrics.salaryImpact / 10000).toFixed(1)}억 수준으로 관리 가능.`
+                : currentScenario?.name?.includes('보수')
+                  ? '보수적 인사안으로 분쟁 위험 최소화. 다만 고성과자 인센티브 효과 약화 우려.'
+                  : '적극적 인사로 세대교체 가속. 승격 확대에 따른 인건비 증가 및 기존 직책자 반발 리스크 관리 필요.'}
             </div>
           </div>
         </div>

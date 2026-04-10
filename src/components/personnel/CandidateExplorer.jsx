@@ -1,222 +1,130 @@
 import { useMemo } from 'react';
 import usePersonnelStore from '../../store/personnelStore';
-import { CANDIDATES } from '../../data/personnelData';
+import { CANDIDATES, JOB_FAMILIES } from '../../data/personnelData';
 import CandidateCard from './CandidateCard';
 import DataTable from '../common/DataTable';
 
 const ENTITIES = ['ALL', ...new Set(CANDIDATES.map((c) => c.entity))];
 const GRADES = ['ALL', 'S', 'A+', 'A', 'B+', 'B', 'C', 'D'];
 const ELIGIBLE_OPTIONS = ['ALL', 'eligible', 'ineligible'];
+const JOB_FAMILY_OPTIONS = ['ALL', ...JOB_FAMILIES];
 
 export default function CandidateExplorer() {
   const {
-    filterEntity,
-    setFilterEntity,
-    filterGrade,
-    setFilterGrade,
-    filterEligible,
-    setFilterEligible,
-    searchText,
-    setSearchText,
-    viewMode,
-    setViewMode,
-    selectedCandidate,
-    setSelectedCandidate,
+    filterEntity, setFilterEntity,
+    filterGrade, setFilterGrade,
+    filterEligible, setFilterEligible,
+    filterJobFamily, setFilterJobFamily,
+    searchText, setSearchText,
+    viewMode, setViewMode,
+    selectedCandidate, setSelectedCandidate,
     getFilteredCandidates,
   } = usePersonnelStore();
 
   const filtered = useMemo(() => getFilteredCandidates(), [
-    filterEntity,
-    filterGrade,
-    filterEligible,
-    searchText,
+    filterEntity, filterGrade, filterEligible, filterJobFamily, searchText,
   ]);
 
   const eligibleCount = useMemo(
-    () => CANDIDATES.filter((c) => c.eligible).length,
-    []
+    () => CANDIDATES.filter((c) => c.eligible).length, []
   );
 
-  // Table headers & rows for DataTable (headers: string[], rows: string[][])
-  const tableHeaders = ['이름', '법인', '부서', '직종', '레벨', '등급', 'C', 'E', 'I', '자격', 'AI'];
+  // Table headers & rows for DataTable
+  const tableHeaders = ['이름', '법인', '부서', '직군', '직종', '레벨', '기초', '최종', 'C', 'E', 'I', '자격', 'AI'];
 
   const tableRows = filtered.map((c) => [
     c.name,
     c.entity,
     c.dept,
+    c.jobFamily,
     c.jobType,
-    c.level,
-    c.grade,
+    `${c.level} ${c.title}`,
+    c.baseGrade,
+    c.finalGrade,
     String(c.cei.c),
     String(c.cei.e),
     String(c.cei.i),
-    c.eligible ? '✓' : '-',
+    c.eligible ? '✓' : c.discipline ? '⛔' : '-',
     `${c.aiScore}★`,
   ]);
+
+  const selectStyle = {
+    padding: '6px 10px',
+    borderRadius: 'var(--radius-sm)',
+    border: '1px solid var(--divider)',
+    fontSize: '12px',
+    fontFamily: 'var(--font-main)',
+    backgroundColor: 'var(--bg)',
+    cursor: 'pointer',
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: '100%' }}>
       {/* Filter Bar */}
       <div
         style={{
-          display: 'flex',
-          gap: '12px',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          padding: '12px 16px',
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: 'var(--radius)',
-          border: '1px solid var(--divider)',
+          display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap',
+          padding: '12px 16px', backgroundColor: 'var(--bg-card)',
+          borderRadius: 'var(--radius)', border: '1px solid var(--divider)',
         }}
       >
-        {/* Search Input */}
         <input
-          type="text"
-          placeholder="이름, 부서, 법인 검색..."
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          style={{
-            padding: '6px 12px',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--divider)',
-            fontSize: '12px',
-            fontFamily: 'var(--font-main)',
-          }}
+          type="text" placeholder="이름, 부서, 법인, 직종 검색..."
+          value={searchText} onChange={(e) => setSearchText(e.target.value)}
+          style={{ ...selectStyle, minWidth: '180px' }}
         />
-
-        {/* Entity Dropdown */}
-        <select
-          value={filterEntity}
-          onChange={(e) => setFilterEntity(e.target.value)}
-          style={{
-            padding: '6px 10px',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--divider)',
-            fontSize: '12px',
-            fontFamily: 'var(--font-main)',
-            backgroundColor: 'var(--bg)',
-            cursor: 'pointer',
-          }}
-        >
+        <select value={filterEntity} onChange={(e) => setFilterEntity(e.target.value)} style={selectStyle}>
           {ENTITIES.map((ent) => (
-            <option key={ent} value={ent}>
-              {ent === 'ALL' ? '법인 전체' : ent}
-            </option>
+            <option key={ent} value={ent}>{ent === 'ALL' ? '법인 전체' : ent}</option>
           ))}
         </select>
-
-        {/* Grade Dropdown */}
-        <select
-          value={filterGrade}
-          onChange={(e) => setFilterGrade(e.target.value)}
-          style={{
-            padding: '6px 10px',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--divider)',
-            fontSize: '12px',
-            fontFamily: 'var(--font-main)',
-            backgroundColor: 'var(--bg)',
-            cursor: 'pointer',
-          }}
-        >
+        <select value={filterJobFamily} onChange={(e) => setFilterJobFamily(e.target.value)} style={selectStyle}>
+          {JOB_FAMILY_OPTIONS.map((jf) => (
+            <option key={jf} value={jf}>{jf === 'ALL' ? '직군 전체' : jf}</option>
+          ))}
+        </select>
+        <select value={filterGrade} onChange={(e) => setFilterGrade(e.target.value)} style={selectStyle}>
           {GRADES.map((gr) => (
-            <option key={gr} value={gr}>
-              {gr === 'ALL' ? '등급 전체' : `등급 ${gr}`}
-            </option>
+            <option key={gr} value={gr}>{gr === 'ALL' ? '최종등급 전체' : `${gr}`}</option>
           ))}
         </select>
-
-        {/* Eligible Dropdown */}
-        <select
-          value={filterEligible}
-          onChange={(e) => setFilterEligible(e.target.value)}
-          style={{
-            padding: '6px 10px',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--divider)',
-            fontSize: '12px',
-            fontFamily: 'var(--font-main)',
-            backgroundColor: 'var(--bg)',
-            cursor: 'pointer',
-          }}
-        >
+        <select value={filterEligible} onChange={(e) => setFilterEligible(e.target.value)} style={selectStyle}>
           {ELIGIBLE_OPTIONS.map((opt) => (
             <option key={opt} value={opt}>
-              {opt === 'ALL' && '자격 전체'}
-              {opt === 'eligible' && '적격자만'}
-              {opt === 'ineligible' && '부적격자만'}
+              {opt === 'ALL' ? '자격 전체' : opt === 'eligible' ? '적격자만' : '부적격자만'}
             </option>
           ))}
         </select>
 
         {/* View Mode Toggle */}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
-          <button
-            onClick={() => setViewMode('card')}
-            style={{
-              padding: '6px 12px',
-              borderRadius: 'var(--radius-sm)',
-              border: viewMode === 'card' ? 'none' : '1px solid var(--divider)',
-              backgroundColor: viewMode === 'card' ? 'var(--accent)' : 'var(--bg)',
-              color: viewMode === 'card' ? '#fff' : 'var(--text-body)',
-              fontSize: '12px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-          >
-            📇 Card
-          </button>
-          <button
-            onClick={() => setViewMode('table')}
-            style={{
-              padding: '6px 12px',
-              borderRadius: 'var(--radius-sm)',
-              border: viewMode === 'table' ? 'none' : '1px solid var(--divider)',
-              backgroundColor: viewMode === 'table' ? 'var(--accent)' : 'var(--bg)',
-              color: viewMode === 'table' ? '#fff' : 'var(--text-body)',
-              fontSize: '12px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-          >
-            📊 Table
-          </button>
+          {[{ mode: 'card', label: '📇 Card' }, { mode: 'table', label: '📊 Table' }].map(({ mode, label }) => (
+            <button key={mode} onClick={() => setViewMode(mode)} style={{
+              padding: '6px 12px', borderRadius: 'var(--radius-sm)',
+              border: viewMode === mode ? 'none' : '1px solid var(--divider)',
+              backgroundColor: viewMode === mode ? 'var(--accent)' : 'var(--bg)',
+              color: viewMode === mode ? '#fff' : 'var(--text-body)',
+              fontSize: '12px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s',
+            }}>{label}</button>
+          ))}
         </div>
       </div>
 
       {/* Results Summary */}
-      <div
-        style={{
-          fontSize: '12px',
-          color: 'var(--text-muted)',
-          fontWeight: '500',
-        }}
-      >
-        전체 {CANDIDATES.length}명 중 {filtered.length}명 표시 · 승진 자격:{' '}
+      <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '500' }}>
+        전체 {CANDIDATES.length}명 중 {filtered.length}명 표시 · 승진 적격:{' '}
         <span style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{eligibleCount}명</span>
+        {' '}· PL {CANDIDATES.filter(c => c.jobFamily === 'PL').length}명 / Non-PL {CANDIDATES.filter(c => c.jobFamily === 'Non-PL').length}명 / 매니저 {CANDIDATES.filter(c => c.jobFamily === '매니저').length}명
       </div>
 
       {/* Content: Card or Table View */}
       {viewMode === 'card' ? (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-            gap: '16px',
-            flex: 1,
-          }}
-        >
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px', flex: 1 }}>
           {filtered.map((candidate) => (
             <CandidateCard
-              key={candidate.id}
-              candidate={candidate}
+              key={candidate.id} candidate={candidate}
               isSelected={selectedCandidate === candidate.id}
               onClick={() => setSelectedCandidate(candidate.id)}
-              onAskCopilot={() => {
-                // Hook into copilot (future implementation)
-              }}
             />
           ))}
         </div>

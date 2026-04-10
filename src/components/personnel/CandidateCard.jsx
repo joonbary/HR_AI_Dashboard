@@ -1,197 +1,139 @@
-import { GRADE_COLORS, GRADE_NUM } from '../../data/personnelData';
+import { GRADE_COLORS, checkEligibility } from '../../data/personnelData';
 import MiniSparkline from './MiniSparkline';
 
-export default function CandidateCard({
-  candidate,
-  isSelected = false,
-  onClick,
-  onAskCopilot,
-}) {
-  const gradeColor = GRADE_COLORS[candidate.grade] || '#999';
-  const borderColor = isSelected ? 'var(--accent)' : 'var(--divider)';
-  const borderWidth = isSelected ? '2px' : '1px';
+export default function CandidateCard({ candidate: c, isSelected, onClick }) {
+  const eligibility = checkEligibility(c);
 
   return (
     <div
       onClick={onClick}
       style={{
-        backgroundColor: 'var(--bg-card)',
-        border: `${borderWidth} solid ${borderColor}`,
+        padding: '14px', backgroundColor: 'var(--bg-card)',
         borderRadius: 'var(--radius)',
-        padding: '16px',
-        cursor: 'pointer',
-        transition: 'all 0.15s',
-        boxShadow: 'var(--shadow)',
+        border: isSelected ? '2px solid var(--accent)' : '1px solid var(--divider)',
+        cursor: 'pointer', transition: 'all 0.15s',
+        display: 'flex', flexDirection: 'column', gap: '10px',
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
-        e.currentTarget.style.transform = 'translateY(-2px)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = 'var(--shadow)';
-        e.currentTarget.style.transform = 'translateY(0)';
-      }}
+      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = 'var(--shadow-lg)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
     >
-      {/* Header: Name, Grade, Title */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+      {/* Header: Name + Grade Badges */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '2px' }}>
-            {candidate.name}
+          <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)' }}>
+            {c.name}
+            {c.flagged && (
+              <span style={{ marginLeft: '6px', fontSize: '10px', color: '#EF4444', fontWeight: '600' }}>
+                ⚠ {c.flagged}
+              </span>
+            )}
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-            {candidate.entity} · {candidate.division}
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+            {c.entity} · {c.division} · {c.jobFamily}
           </div>
         </div>
-        <div
-          style={{
-            backgroundColor: gradeColor,
-            color: '#fff',
-            padding: '4px 10px',
-            borderRadius: '4px',
-            fontSize: '12px',
-            fontWeight: '600',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {candidate.grade}
+        <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+          <span style={{
+            padding: '2px 6px', borderRadius: '3px', fontSize: '10px', fontWeight: '600',
+            backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)',
+            border: '1px solid var(--divider)',
+          }}>
+            기초 {c.baseGrade}
+          </span>
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>→</span>
+          <span style={{
+            padding: '2px 8px', borderRadius: '3px', fontSize: '11px', fontWeight: '700',
+            backgroundColor: GRADE_COLORS[c.finalGrade] || '#999', color: '#fff',
+          }}>
+            {c.finalGrade}
+          </span>
         </div>
       </div>
 
-      {/* Title & Level */}
-      <div style={{ fontSize: '12px', color: 'var(--text-body)', marginBottom: '12px' }}>
-        {candidate.title} · {candidate.level} · {candidate.years}년
+      {/* Level & Title */}
+      <div style={{ display: 'flex', gap: '6px', fontSize: '11px', flexWrap: 'wrap' }}>
+        <span style={{
+          padding: '2px 8px', borderRadius: '3px',
+          backgroundColor: 'var(--bg-subtle)', color: 'var(--text-body)',
+          border: '1px solid var(--divider)',
+        }}>
+          {c.level} {c.title}
+        </span>
+        <span style={{
+          padding: '2px 8px', borderRadius: '3px',
+          backgroundColor: 'var(--bg-subtle)', color: 'var(--text-body)',
+          border: '1px solid var(--divider)',
+        }}>
+          {c.jobType}
+        </span>
+        <span style={{
+          padding: '2px 8px', borderRadius: '3px',
+          backgroundColor: eligibility.eligible ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+          color: eligibility.eligible ? '#16A34A' : '#DC2626',
+          border: `1px solid ${eligibility.eligible ? '#22C55E' : '#EF4444'}`,
+          fontWeight: '600',
+        }}>
+          {eligibility.eligible ? '✓ 적격' : '✗ 부적격'}
+        </span>
       </div>
 
-      {/* CEI Bars */}
-      <div style={{ marginBottom: '12px' }}>
-        <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>
-          CEI
-        </div>
-        {['c', 'e', 'i'].map((key) => {
-          const val = candidate.cei[key];
-          const pct = (val / 100) * 100;
-          return (
-            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-              <span style={{ fontSize: '10px', fontWeight: '600', color: 'var(--text-muted)', minWidth: '16px' }}>
-                {key.toUpperCase()}
-              </span>
-              <div
-                style={{
-                  flex: 1,
-                  height: '6px',
-                  backgroundColor: 'var(--bg-subtle)',
-                  borderRadius: '3px',
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  style={{
-                    height: '100%',
-                    backgroundColor: gradeColor,
-                    width: `${pct}%`,
-                    transition: 'width 0.2s',
-                  }}
-                />
-              </div>
-              <span style={{ fontSize: '10px', color: 'var(--text-muted)', minWidth: '20px', textAlign: 'right' }}>
-                {val}
-              </span>
+      {/* CEI Bar (0~2 scale) */}
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        {[
+          { key: 'c', label: 'C 기여', val: c.cei.c },
+          { key: 'e', label: 'E 전문', val: c.cei.e },
+          { key: 'i', label: 'I 영향', val: c.cei.i },
+        ].map(({ key, label, val }) => (
+          <div key={key} style={{ flex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-muted)', marginBottom: '2px' }}>
+              <span>{label}</span>
+              <span style={{ fontWeight: '600' }}>{val}</span>
             </div>
-          );
-        })}
+            <div style={{ height: '4px', borderRadius: '2px', backgroundColor: 'var(--divider)' }}>
+              <div style={{
+                height: '100%', borderRadius: '2px',
+                width: `${(val / 2) * 100}%`,
+                backgroundColor: val >= 1.5 ? '#22C55E' : val >= 1 ? '#F59E0B' : '#EF4444',
+                transition: 'width 0.3s',
+              }} />
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Evaluation History Sparkline */}
-      <div style={{ marginBottom: '12px' }}>
-        <div style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px' }}>
-          평가 추이
+      {/* Sparkline + AI Score */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <MiniSparkline history={c.evalHistory} />
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>AI 활용</div>
+          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--accent)' }}>
+            {'★'.repeat(c.aiScore)}{'☆'.repeat(5 - c.aiScore)}
+          </div>
         </div>
-        <MiniSparkline data={candidate.evalHistory} width={80} height={24} />
       </div>
 
       {/* Keywords */}
-      {candidate.keywords && candidate.keywords.length > 0 && (
-        <div style={{ marginBottom: '12px' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            {candidate.keywords.map((kw, idx) => (
-              <span
-                key={idx}
-                style={{
-                  fontSize: '10px',
-                  backgroundColor: 'var(--bg-subtle)',
-                  color: 'var(--text-body)',
-                  padding: '3px 8px',
-                  borderRadius: '3px',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {kw}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* AI Utilization Stars & Eligible Badge */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <div style={{ display: 'flex', gap: '2px' }}>
-          {[...Array(5)].map((_, i) => (
-            <span
-              key={i}
-              style={{
-                color: i < candidate.aiScore ? 'var(--accent)' : 'var(--divider)',
-                fontSize: '14px',
-              }}
-            >
-              ★
-            </span>
-          ))}
-        </div>
-        {candidate.eligible && (
-          <span
-            style={{
-              fontSize: '10px',
-              fontWeight: '600',
-              color: '#fff',
-              backgroundColor: 'var(--risk-low)',
-              padding: '2px 8px',
-              borderRadius: '3px',
-            }}
-          >
-            적격
+      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+        {c.keywords.map((kw, i) => (
+          <span key={i} style={{
+            fontSize: '10px', padding: '2px 6px', borderRadius: '3px',
+            backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)',
+          }}>
+            {kw}
           </span>
-        )}
+        ))}
       </div>
 
-      {/* Ask Copilot Button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onAskCopilot?.(candidate.id);
-        }}
-        style={{
-          width: '100%',
-          padding: '8px 12px',
-          backgroundColor: 'var(--accent-light)',
-          border: '1px solid var(--accent)',
-          color: 'var(--accent)',
-          fontSize: '12px',
-          fontWeight: '600',
-          borderRadius: 'var(--radius-sm)',
-          cursor: 'pointer',
-          transition: 'all 0.15s',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--accent)';
-          e.currentTarget.style.color = '#fff';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--accent-light)';
-          e.currentTarget.style.color = 'var(--accent)';
-        }}
-      >
-        🤖 질문
-      </button>
+      {/* Ineligibility Reasons */}
+      {!eligibility.eligible && (
+        <div style={{
+          padding: '6px 8px', borderRadius: 'var(--radius-sm)',
+          backgroundColor: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)',
+          fontSize: '10px', color: '#DC2626', lineHeight: '1.4',
+        }}>
+          {eligibility.reasons.map((r, i) => <div key={i}>• {r}</div>)}
+        </div>
+      )}
     </div>
   );
 }

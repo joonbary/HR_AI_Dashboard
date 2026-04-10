@@ -6,6 +6,7 @@ const TYPE_COLORS = {
   '직책해제': '#E74C3C',
   '이동확정': '#3498DB',
   '승진보류': '#95A5A6',
+  '징계제한': '#8E44AD',
 };
 
 const STATUS_COLORS = {
