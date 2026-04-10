@@ -33,6 +33,31 @@ export default function HRPlanView() {
     return { promoCount, payStepCount, elevCount, transCount, removalCount, total: currentScenario.actions.length, salaryImpact };
   }, [currentScenario, grouped]);
 
+  if (!SCENARIOS || SCENARIOS.length === 0) {
+    return (
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        height: '100%', gap: '16px', padding: '40px',
+      }}>
+        <div style={{ fontSize: '48px' }}>📋</div>
+        <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>
+          인사안 시나리오 준비 중
+        </div>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', maxWidth: '400px', lineHeight: '1.6' }}>
+          실 데이터 기반 Calibration 완료 후 승진·승급·승격·이동·직책해제 시나리오를 편집할 수 있습니다.
+          대상자 탐색 탭에서 후보자를 확인하고, Calibration 탭에서 등급 조정을 먼저 진행해 주세요.
+        </div>
+        <div style={{
+          padding: '12px 16px', backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius)',
+          border: '1px solid var(--divider)', fontSize: '12px', color: 'var(--text-body)',
+        }}>
+          📊 26상 벤치마크: 승진 {BENCHMARK_26H1.summary.promotion.total}명 / 승급 {BENCHMARK_26H1.summary.payStep.total}명 /
+          승격 {BENCHMARK_26H1.summary.elevation.total}명 / 이동 {BENCHMARK_26H1.summary.transfer.total}명 (총 {BENCHMARK_26H1.grandTotal}명)
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%' }}>
       {/* Scenario Tabs */}

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import usePersonnelStore from '../../store/personnelStore';
 import {
   CANDIDATES, GRADE_ORDER, GRADE_COLORS, BASE_TO_FINAL_MAP,
@@ -8,6 +8,7 @@ import GradeDistChart from './GradeDistChart';
 
 const DIVISIONS = ['전체', ...new Set(CANDIDATES.map((c) => c.entity))];
 const ORG_GRADES = ['S', 'A+', 'A', 'B+', 'B', 'C', 'D'];
+const CAL_PAGE_SIZE = 100;
 
 export default function CalibrationView() {
   const {
@@ -15,6 +16,8 @@ export default function CalibrationView() {
     orgEvalGrade, setOrgEvalGrade,
     grades, changeGrade,
   } = usePersonnelStore();
+
+  const [calPage, setCalPage] = useState(0);
 
   const divisionCandidates = useMemo(() => {
     if (selectedDivision === '전체') return CANDIDATES;
@@ -140,6 +143,24 @@ export default function CalibrationView() {
         backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius)',
         border: '1px solid var(--divider)',
       }}>
+        {/* Table Pagination */}
+        {divisionCandidates.length > CAL_PAGE_SIZE && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              {divisionCandidates.length}명 중 {calPage * CAL_PAGE_SIZE + 1}~{Math.min((calPage + 1) * CAL_PAGE_SIZE, divisionCandidates.length)}
+            </span>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <button onClick={() => setCalPage(Math.max(0, calPage - 1))} disabled={calPage === 0}
+                style={{ padding: '3px 8px', fontSize: '11px', borderRadius: '3px', border: '1px solid var(--divider)', backgroundColor: 'var(--bg)', cursor: 'pointer' }}>◀</button>
+              <span style={{ fontSize: '11px', padding: '3px 8px', color: 'var(--text-muted)' }}>
+                {calPage + 1}/{Math.ceil(divisionCandidates.length / CAL_PAGE_SIZE)}
+              </span>
+              <button onClick={() => setCalPage(Math.min(Math.ceil(divisionCandidates.length / CAL_PAGE_SIZE) - 1, calPage + 1))}
+                disabled={calPage >= Math.ceil(divisionCandidates.length / CAL_PAGE_SIZE) - 1}
+                style={{ padding: '3px 8px', fontSize: '11px', borderRadius: '3px', border: '1px solid var(--divider)', backgroundColor: 'var(--bg)', cursor: 'pointer' }}>▶</button>
+            </div>
+          </div>
+        )}
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--divider)' }}>
@@ -149,7 +170,7 @@ export default function CalibrationView() {
             </tr>
           </thead>
           <tbody>
-            {divisionCandidates.map((candidate) => {
+            {divisionCandidates.slice(calPage * CAL_PAGE_SIZE, (calPage + 1) * CAL_PAGE_SIZE).map((candidate) => {
               const currentGrade = grades[candidate.id];
               const originalGrade = originalGrades[candidate.id];
               const isChanged = currentGrade !== originalGrade;

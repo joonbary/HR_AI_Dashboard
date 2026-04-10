@@ -78,11 +78,15 @@ const usePersonnelStore = create((set, get) => ({
       if (filterEntity !== 'ALL' && c.entity !== filterEntity) return false;
       if (filterGrade !== 'ALL' && c.finalGrade !== filterGrade) return false;
       if (filterJobFamily !== 'ALL' && c.jobFamily !== filterJobFamily) return false;
-      if (filterEligible === 'eligible' && !c.eligible) return false;
-      if (filterEligible === 'ineligible' && c.eligible) return false;
+      if (filterEligible !== 'ALL') {
+        const elig = checkEligibility(c);
+        if (filterEligible === 'eligible' && !elig.eligible) return false;
+        if (filterEligible === 'ineligible' && elig.eligible) return false;
+      }
       if (searchText) {
         const q = searchText.toLowerCase();
-        if (!c.name.includes(q) && !c.dept.includes(q) && !c.division.includes(q) && !c.entity.includes(q) && !c.jobType.includes(q)) return false;
+        const fields = [c.name, c.dept, c.division, c.entity, c.jobType].join(' ').toLowerCase();
+        if (!fields.includes(q)) return false;
       }
       return true;
     });

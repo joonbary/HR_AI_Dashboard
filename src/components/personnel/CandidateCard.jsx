@@ -1,5 +1,4 @@
 import { GRADE_COLORS, checkEligibility } from '../../data/personnelData';
-import MiniSparkline from './MiniSparkline';
 
 export default function CandidateCard({ candidate: c, isSelected, onClick }) {
   const eligibility = checkEligibility(c);
@@ -29,7 +28,7 @@ export default function CandidateCard({ candidate: c, isSelected, onClick }) {
             )}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            {c.entity} · {c.division} · {c.jobFamily}
+            {c.entity} · {c.division || c.dept} · {c.jobFamily}
           </div>
         </div>
         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
@@ -59,13 +58,15 @@ export default function CandidateCard({ candidate: c, isSelected, onClick }) {
         }}>
           {c.level} {c.title}
         </span>
-        <span style={{
-          padding: '2px 8px', borderRadius: '3px',
-          backgroundColor: 'var(--bg-subtle)', color: 'var(--text-body)',
-          border: '1px solid var(--divider)',
-        }}>
-          {c.jobType}
-        </span>
+        {c.jobType && (
+          <span style={{
+            padding: '2px 8px', borderRadius: '3px',
+            backgroundColor: 'var(--bg-subtle)', color: 'var(--text-body)',
+            border: '1px solid var(--divider)',
+          }}>
+            {c.jobType}
+          </span>
+        )}
         <span style={{
           padding: '2px 8px', borderRadius: '3px',
           backgroundColor: eligibility.eligible ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
@@ -75,9 +76,18 @@ export default function CandidateCard({ candidate: c, isSelected, onClick }) {
         }}>
           {eligibility.eligible ? '✓ 적격' : '✗ 부적격'}
         </span>
+        {eligibility.tenureYears != null && (
+          <span style={{
+            padding: '2px 8px', borderRadius: '3px',
+            backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)',
+            border: '1px solid var(--divider)',
+          }}>
+            체류 {eligibility.tenureYears}년
+          </span>
+        )}
       </div>
 
-      {/* CEI Bar (0~2 scale) */}
+      {/* CEI Bar (0~4 scale) */}
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         {[
           { key: 'c', label: 'C 기여', val: c.cei.c },
@@ -92,8 +102,8 @@ export default function CandidateCard({ candidate: c, isSelected, onClick }) {
             <div style={{ height: '4px', borderRadius: '2px', backgroundColor: 'var(--divider)' }}>
               <div style={{
                 height: '100%', borderRadius: '2px',
-                width: `${(val / 2) * 100}%`,
-                backgroundColor: val >= 1.5 ? '#22C55E' : val >= 1 ? '#F59E0B' : '#EF4444',
+                width: `${Math.min((val / 4) * 100, 100)}%`,
+                backgroundColor: val >= 3 ? '#22C55E' : val >= 2 ? '#3B82F6' : val >= 1 ? '#F59E0B' : '#EF4444',
                 transition: 'width 0.3s',
               }} />
             </div>
@@ -101,28 +111,30 @@ export default function CandidateCard({ candidate: c, isSelected, onClick }) {
         ))}
       </div>
 
-      {/* Sparkline + AI Score */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <MiniSparkline history={c.evalHistory} />
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>AI 활용</div>
-          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--accent)' }}>
-            {'★'.repeat(c.aiScore)}{'☆'.repeat(5 - c.aiScore)}
-          </div>
+      {/* CEI Total + Pay Step */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px' }}>
+        <div style={{ color: 'var(--text-muted)' }}>
+          CEI 합계: <strong style={{ color: 'var(--text-primary)' }}>{c.ceiTotal}</strong>
+          {c.payStep && <span> · 급호: <strong>{c.payStep}</strong></span>}
+        </div>
+        <div style={{ color: 'var(--text-muted)', fontSize: '10px' }}>
+          {c.hireDate && `입사: ${c.hireDate.slice(0,7)}`}
         </div>
       </div>
 
-      {/* Keywords */}
-      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-        {c.keywords.map((kw, i) => (
-          <span key={i} style={{
-            fontSize: '10px', padding: '2px 6px', borderRadius: '3px',
-            backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)',
-          }}>
-            {kw}
-          </span>
-        ))}
-      </div>
+      {/* Keywords (optional) */}
+      {c.keywords && c.keywords.length > 0 && (
+        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+          {c.keywords.map((kw, i) => (
+            <span key={i} style={{
+              fontSize: '10px', padding: '2px 6px', borderRadius: '3px',
+              backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)',
+            }}>
+              {kw}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Ineligibility Reasons */}
       {!eligibility.eligible && (
