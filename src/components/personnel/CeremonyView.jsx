@@ -17,7 +17,31 @@ const CEREMONY_GROUPS = [
 
 export default function CeremonyView() {
   const { ceremonyType, setCeremonyType, activeScenario } = usePersonnelStore();
-  const scenario = SCENARIOS[activeScenario] || SCENARIOS[0];
+  const scenario = SCENARIOS.length > 0 ? (SCENARIOS[activeScenario] || SCENARIOS[0]) : null;
+
+  if (!scenario) {
+    return (
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        height: '100%', gap: '16px', padding: '40px',
+      }}>
+        <div style={{ fontSize: '48px' }}>🎓</div>
+        <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>
+          세레모니 준비 대기
+        </div>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', maxWidth: '400px', lineHeight: '1.6' }}>
+          인사안 시나리오가 편성되면 사령장 수여식 슬라이드, 사령장 문안, MC 시나리오가 자동 생성됩니다.
+          인사안 편집 탭에서 시나리오를 먼저 구성해 주세요.
+        </div>
+        <div style={{
+          padding: '12px 16px', backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius)',
+          border: '1px solid var(--divider)', fontSize: '12px', color: 'var(--text-body)',
+        }}>
+          참고: 실제 사령장 수여 예식은 8그룹 호명 체계 (차장승진 → 부장승진 → 팀장·지점장 승격 → 부장승격 → 신규임원 → 임원승진 → 대표이사 → 신규임원소개)
+        </div>
+      </div>
+    );
+  }
 
   // 시나리오에서 승진·승격 대상자 추출
   const promotees = scenario.actions
