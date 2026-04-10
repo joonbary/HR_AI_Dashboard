@@ -8,6 +8,7 @@ import RiskTab from './components/tabs/RiskTab';
 import InsightsTab from './components/tabs/InsightsTab';
 import ExecTab from './components/tabs/ExecTab';
 import OrgTab from './components/tabs/OrgTab';
+import PersonnelTab from './components/tabs/PersonnelTab';
 import CopilotPanel from './components/copilot/CopilotPanel';
 import './styles/theme.css';
 
@@ -19,6 +20,7 @@ const TAB_COMPONENTS = {
   insight: InsightsTab,
   exec: ExecTab,
   org: OrgTab,
+  personnel: PersonnelTab,
 };
 
 export default function App() {

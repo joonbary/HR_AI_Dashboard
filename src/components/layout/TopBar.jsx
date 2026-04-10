@@ -8,9 +8,10 @@ const TABS = [
   { id: 'insight', label: 'HR인사이트' },
   { id: 'exec', label: '임원요약' },
   { id: 'org', label: '조직도' },
+  { id: 'personnel', label: '★ 정기인사' },
 ];
 
-const CEO_TABS = ['workforce', 'risk', 'exec'];
+const CEO_TABS = ['workforce', 'risk', 'exec', 'personnel'];
 
 export default function TopBar() {
   const { activeTab, setActiveTab, viewMode, setViewMode, toggleCopilot, copilotOpen } = useStore();
