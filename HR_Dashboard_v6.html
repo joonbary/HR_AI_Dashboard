@@ -937,37 +937,51 @@ Chart.defaults.font.size = 11;
 Chart.defaults.color = '#555';
 Chart.defaults.plugins.legend.labels.boxWidth = 10;
 Chart.defaults.plugins.legend.labels.padding = 12;
-// [v6] 데이터레이블 글로벌 기본값 — 개별 차트에서 오버라이드 가능
-Chart.defaults.plugins.datalabels = {
-  display: function(ctx){
-    // stacked bar에서는 작은 값 숨김
-    if(ctx.chart.config.options?.scales?.x?.stacked || ctx.chart.config.options?.scales?.y?.stacked){
-      const total = ctx.dataset.data.reduce((s,v)=>s+(v||0),0);
-      return ctx.dataset.data[ctx.dataIndex] > total*0.04;
-    }
-    return true;
-  },
-  color: '#555', font:{size:10, weight:'bold'},
-  anchor:'end', align:'end', offset:2,
-  formatter:function(v,ctx){
-    if(v==null||v===0) return '';
-    // 퍼센트 차트
-    const yAxis = ctx.chart.config.options?.scales?.y;
-    if(yAxis?.max===100 || (yAxis?.ticks?.callback && String(yAxis.ticks.callback).includes('%'))) return v.toFixed(1)+'%';
-    // 억원 단위
-    if(yAxis?.ticks?.callback && String(yAxis.ticks.callback).includes('억')) return (v/10000).toFixed(0)+'억';
-    // 일반 숫자
-    if(v>=1000) return v.toLocaleString('ko-KR');
-    if(v<1 && v>0) return (v*100).toFixed(1)+'%';
-    return String(v);
-  }
-};
-// [v6] 도넛·파이·레이더에서는 기본 숨김 (범례에 값 포함)
-Chart.overrides.doughnut.plugins.datalabels = {display:false};
-Chart.overrides.pie && (Chart.overrides.pie.plugins.datalabels = {display:false});
-Chart.overrides.radar && (Chart.overrides.radar.plugins.datalabels = {display:false});
+// [v6] 데이터레이블 — makeChart에서 주입하는 방식으로 변경 (글로벌 설정은 안전 문제)
+// datalabels 플러그인은 자동 등록됨, 기본은 display:false로 비활성
+ChartDataLabels && Chart.register(ChartDataLabels);
+Chart.defaults.set('plugins.datalabels', {display:false});
 const CI = {};
-function makeChart(id,cfg){if(CI[id]){CI[id].destroy()}CI[id]=new Chart(document.getElementById(id),cfg)}
+function makeChart(id,cfg){
+  if(CI[id]){CI[id].destroy()}
+  // [v6] 자동 데이터레이블 주입 — 도넛/레이더/파이 제외, bar/line만 적용
+  const t = cfg.type;
+  if(t==='bar'||t==='line'){
+    if(!cfg.options) cfg.options={};
+    if(!cfg.options.plugins) cfg.options.plugins={};
+    if(!cfg.options.plugins.datalabels){
+      const isStacked = cfg.options.scales?.x?.stacked || cfg.options.scales?.y?.stacked;
+      const isPercent = cfg.options.scales?.y?.ticks?.callback && String(cfg.options.scales.y.ticks.callback).includes('%');
+      const isBillion = cfg.options.scales?.y?.ticks?.callback && String(cfg.options.scales.y.ticks.callback).includes('억');
+      cfg.options.plugins.datalabels = {
+        display: function(ctx){
+          if(isStacked){
+            const v = ctx.dataset.data[ctx.dataIndex];
+            const total = ctx.chart.data.datasets.reduce((s,ds)=>s+Math.abs(ds.data[ctx.dataIndex]||0),0);
+            return v!=null && total>0 && Math.abs(v)/total > 0.08;
+          }
+          const v = ctx.dataset.data[ctx.dataIndex];
+          return v!=null && v!==0;
+        },
+        color: isStacked ? '#fff' : '#555',
+        font:{size:isStacked?9:10, weight:'bold'},
+        anchor: isStacked ? 'center' : 'end',
+        align: isStacked ? 'center' : 'end',
+        offset: isStacked ? 0 : 2,
+        formatter: function(v){
+          if(v==null||v===0) return '';
+          if(isPercent) return v.toFixed(1)+'%';
+          if(isBillion) return (v/10000).toFixed(0)+'억';
+          if(v>=10000) return (v/10000).toFixed(1)+'억';
+          if(v>=1000) return v.toLocaleString('ko-KR');
+          if(v<1 && v>0) return (v*100).toFixed(1)+'%';
+          return Number.isInteger(v)?String(v):v.toFixed(1);
+        }
+      };
+    }
+  }
+  CI[id]=new Chart(document.getElementById(id),cfg);
+}
 function num(n){return n==null?'—':n.toLocaleString('ko-KR')}
 function pct(n,d=1){return n==null?'—':(n*100).toFixed(d)+'%'}
 
