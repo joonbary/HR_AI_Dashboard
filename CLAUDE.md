@@ -1,197 +1,242 @@
-# HR Dashboard - 프로젝트 룸
+﻿# Current Architecture Notes
 
-## 프로젝트 개요
+Before making structural changes, check `docs/ARCHITECTURE.md` and `KNOWN_ISSUES.md`.
 
-OK금융그룹 인사부 전용 HR 대시보드 + AI Copilot 시스템
-React (Vite) 풀스택 전환 프로젝트
+Current React boundaries:
+
+- HR Dashboard app shell: `apps/hr-dashboard/`
+- Personnel app shell: `apps/personnel-app/`
+- HR Dashboard feature code: `src/features/hr-dashboard/`
+- Personnel feature code: `src/features/personnel/`
+- Shared UI primitives: `src/shared/ui/`
+- Shared cross-app state: `src/shared/store/`
+- Shared Copilot service/client/context: `src/services/copilot/`
+
+State ownership:
+
+- Dashboard state lives in `src/features/hr-dashboard/store/dashboardStore.js`.
+- Personnel workflow state lives in `src/features/personnel/store/personnelStore.js`.
+- Copilot open state and messages live in `src/shared/store/copilotStore.js`.
+
+Copilot routes:
+
+- `POST /api/copilot/dashboard`
+- `POST /api/copilot/personnel`
+- `POST /api/chat` remains only as a legacy dashboard-compatible route.
+
+---
+# HR Dashboard - ?꾨줈?앺듃 猷?
+> ?묒뾽 ?쒖옉 ??`KNOWN_ISSUES.md`瑜?癒쇱? ?뺤씤?쒕떎. ?뱁엳 Windows PowerShell??`npm.cmd`, `node_modules` ?좉툑, Vite 媛쒕컻 ?쒕쾭/localhost ?ㅻ쪟 ?щ컻 諛⑹? ?덉감瑜??곕Ⅸ??
+
+## ?꾨줈?앺듃 媛쒖슂
+
+OK湲덉쑖洹몃９ ?몄궗遺 ?꾩슜 HR ??쒕낫??+ AI Copilot ?쒖뒪??
+React (Vite) ??ㅽ깮 ?꾪솚 ?꾨줈?앺듃
 
 - **GitHub**: https://github.com/joonbary/HR_AI_Dashboard
-- **배포**: https://joonbary.github.io/HR_AI_Dashboard/ (v5 HTML 버전)
-- **상태**: React 전환 진행 중 (P9)
+- **諛고룷**: https://joonbary.github.io/HR_AI_Dashboard/ (v5 HTML 踰꾩쟾)
+- **?곹깭**: React ?꾪솚 吏꾪뻾 以?(P9), HR ??쒕낫?쒖? ?뺢린?몄궗 ?깆쓣 遺꾨━ ?댁쁺
 
 ---
 
-## 기술 스택
+## ??遺꾨━ 援ъ“
 
-| 레이어 | 기술 | 비고 |
+| ??| 寃쎈줈 | ??븷 |
+|----|------|------|
+| HR Dashboard | `apps/hr-dashboard/` | ?몃젰?꾪솴, ?깃낵쨌蹂댁긽, AI?꾪솚, 由ъ뒪?? ?몄궗?댄듃, ?꾩썝?붿빟, 議곗쭅??|
+| Personnel App | `apps/personnel-app/` | ??곸옄 ?먯깋, Calibration, ?몄궗?? 蹂닿퀬 紐⑤뱶, ?몃젅紐⑤땲, Decision Log |
+| Shared Source | `src/` | ???깆씠 怨듭쑀?섎뒗 而댄룷?뚰듃, ?곗씠?? ?ㅽ??? ?ㅽ넗??|
+
+媛쒕컻 ?쒕쾭 湲곗? URL:
+
+```text
+http://localhost:5173/HR_AI_Dashboard/
+http://localhost:5173/HR_AI_Dashboard/apps/personnel-app/
+```
+
+---
+
+## 湲곗닠 ?ㅽ깮
+
+| ?덉씠??| 湲곗닠 | 鍮꾧퀬 |
 |--------|------|------|
 | Frontend | React 19 + Vite 8 | SPA, CSR |
-| 상태관리 | Zustand | 경량 스토어 |
-| 차트 | Chart.js 4 + react-chartjs-2 | 15개 차트 |
-| 조직도 | D3.js 7 | SVG 트리 렌더링 |
-| PPT 생성 | PptxGenJS | 클라이언트 사이드 |
-| 스타일 | CSS Variables + 커스텀 CSS | 다크모드 대비 |
-| Backend (예정) | Python FastAPI | Claude API 프록시 |
-| DB (예정) | SQLite → PostgreSQL | 인력 데이터 저장 |
+| ?곹깭愿由?| Zustand | 寃쎈웾 ?ㅽ넗??|
+| 李⑦듃 | Chart.js 4 + react-chartjs-2 | 15媛?李⑦듃 |
+| 議곗쭅??| D3.js 7 | SVG ?몃━ ?뚮뜑留?|
+| PPT ?앹꽦 | PptxGenJS | ?대씪?댁뼵???ъ씠??|
+| ?ㅽ???| CSS Variables + 而ㅼ뒪? CSS | ?ㅽ겕紐⑤뱶 ?鍮?|
+| Backend (?덉젙) | Python FastAPI | Claude API ?꾨줉??|
+| DB (?덉젙) | SQLite ??PostgreSQL | ?몃젰 ?곗씠?????|
 
 ---
 
-## 디렉토리 구조
+## ?붾젆?좊━ 援ъ“
 
 ```
 src/
-├── components/
-│   ├── layout/          TopBar, FilterBar
-│   ├── tabs/            WorkforceTab, PerformanceTab, AITab, RiskTab,
-│   │                    InsightsTab, ExecTab, OrgTab
-│   ├── charts/          ChartCard (범용 Chart.js 래퍼)
-│   ├── common/          KpiCard, DataTable
-│   └── copilot/         CopilotPanel
-├── data/
-│   ├── dashboardData.js   D 객체 (인력·성과·인건비·AWTA 시계열)
-│   ├── orgTreeData.js     조직도 트리 (7개 법인)
-│   └── riskData.js        리스크 매트릭스 계산
-├── store/
-│   └── useStore.js        Zustand 글로벌 스토어
-├── hooks/
-│   └── useFilteredData.js 필터 적용 데이터 훅
-├── styles/
-│   └── theme.css          디자인 토큰 + 전체 스타일
-├── api/                   (예정) API 클라이언트
-├── App.jsx                루트 컴포넌트
-└── main.jsx               엔트리포인트
+?쒋?? components/
+??  ?쒋?? layout/          TopBar, FilterBar
+??  ?쒋?? tabs/            WorkforceTab, PerformanceTab, AITab, RiskTab,
+??  ??                   InsightsTab, ExecTab, OrgTab
+??  ?쒋?? charts/          ChartCard (踰붿슜 Chart.js ?섑띁)
+??  ?쒋?? common/          KpiCard, DataTable
+??  ?붴?? copilot/         CopilotPanel
+?쒋?? data/
+??  ?쒋?? dashboardData.js   D 媛앹껜 (?몃젰쨌?깃낵쨌?멸굔鍮꽷텮WTA ?쒓퀎??
+??  ?쒋?? orgTreeData.js     議곗쭅???몃━ (7媛?踰뺤씤)
+??  ?붴?? riskData.js        由ъ뒪??留ㅽ듃由?뒪 怨꾩궛
+?쒋?? store/
+??  ?붴?? useStore.js        Zustand 湲濡쒕쾶 ?ㅽ넗??
+?쒋?? hooks/
+??  ?붴?? useFilteredData.js ?꾪꽣 ?곸슜 ?곗씠????
+?쒋?? styles/
+??  ?붴?? theme.css          ?붿옄???좏겙 + ?꾩껜 ?ㅽ???
+?쒋?? api/                   (?덉젙) API ?대씪?댁뼵??
+?쒋?? App.jsx                猷⑦듃 而댄룷?뚰듃
+?붴?? main.jsx               ?뷀듃由ы룷?명듃
 ```
 
 ---
 
-## 7개 탭 구성
+## 7媛???援ъ꽦
 
-| Tab | 컴포넌트 | 차트 수 | 핵심 데이터 |
+| Tab | 而댄룷?뚰듃 | 李⑦듃 ??| ?듭떖 ?곗씠??|
 |-----|---------|---------|------------|
-| 인력현황 | WorkforceTab | 10 | headcount, jobtype, jobgroup, gender, entry/resign |
-| 성과·보상 | PerformanceTab | 4 | evalDist, aAbove, laborCost |
-| AI전환 | AITab | 2 | awta, shift |
-| 리스크 | RiskTab | 2 | calcRiskData() 동적 계산 |
-| HR인사이트 | InsightsTab | 0 | insights 배열 (카테고리 필터) |
-| 임원요약 | ExecTab | 2 | 집계 KPI + Action Items |
-| 조직도 | OrgTab | 0 | ORG_TREE_DATA (트리 컴포넌트) |
+| ?몃젰?꾪솴 | WorkforceTab | 10 | headcount, jobtype, jobgroup, gender, entry/resign |
+| ?깃낵쨌蹂댁긽 | PerformanceTab | 4 | evalDist, aAbove, laborCost |
+| AI?꾪솚 | AITab | 2 | awta, shift |
+| 由ъ뒪??| RiskTab | 2 | calcRiskData() ?숈쟻 怨꾩궛 |
+| HR?몄궗?댄듃 | InsightsTab | 0 | insights 諛곗뿴 (移댄뀒怨좊━ ?꾪꽣) |
+| ?꾩썝?붿빟 | ExecTab | 2 | 吏묎퀎 KPI + Action Items |
+| 議곗쭅??| OrgTab | 0 | ORG_TREE_DATA (?몃━ 而댄룷?뚰듃) |
 
 ---
 
-## 데이터 흐름
+## ?곗씠???먮쫫
 
 ```
-D (dashboardData.js) ─── 정적 JSON (사원명부 기반)
-  │
-  ├── useStore (Zustand) ─── company, year 필터 상태
-  │
-  ├── useFilteredData() ─── 필터 적용된 집계 데이터
-  │
-  └── 각 Tab 컴포넌트 ─── useMemo로 Chart.js config 생성
-                            └── ChartCard가 canvas에 렌더링
+D (dashboardData.js) ??? ?뺤쟻 JSON (?ъ썝紐낅? 湲곕컲)
+  ??
+  ?쒋?? useStore (Zustand) ??? company, year ?꾪꽣 ?곹깭
+  ??
+  ?쒋?? useFilteredData() ??? ?꾪꽣 ?곸슜??吏묎퀎 ?곗씠??
+  ??
+  ?붴?? 媛?Tab 而댄룷?뚰듃 ??? useMemo濡?Chart.js config ?앹꽦
+                            ?붴?? ChartCard媛 canvas???뚮뜑留?
 ```
 
 ---
 
-## OK금융그룹 CI
+## OK湲덉쑖洹몃９ CI
 
-| 항목 | 값 |
+| ??ぉ | 媛?|
 |------|-----|
 | OK Orange | `#F77310` |
 | Accent | `#E8572A` |
 | OK Gold | `#FCAF17` |
 | Dark Gray | `#353C41` |
-| 폰트 | Pretendard > 맑은 고딕 |
+| ?고듃 | Pretendard > 留묒? 怨좊뵓 |
 
 ---
 
-## 개발 명령어
+## 媛쒕컻 紐낅졊??
 
 ```bash
-npm install          # 의존성 설치
-npm run dev          # 개발 서버 (HMR)
-npm run build        # 프로덕션 빌드
-npm run preview      # 빌드 결과 미리보기
+npm install          # ?섏〈???ㅼ튂
+npm run dev          # 媛쒕컻 ?쒕쾭 (HMR)
+npm run build        # ?꾨줈?뺤뀡 鍮뚮뱶
+npm run preview      # 鍮뚮뱶 寃곌낵 誘몃━蹂닿린
 ```
 
 ---
 
-## 향후 로드맵
+## ?ν썑 濡쒕뱶留?
 
-### Phase 2 (현재)
-- [ ] React 전환 완료 (모든 탭 기능 동등성 확보)
-- [ ] D3.js 조직도 → React 통합 (useRef + useEffect)
-- [ ] PptxGenJS PPT 다운로드 React 연동
-- [ ] 다크모드 구현
+### Phase 2 (?꾩옱)
+- [ ] React ?꾪솚 ?꾨즺 (紐⑤뱺 ??湲곕뒫 ?숇벑???뺣낫)
+- [ ] D3.js 議곗쭅????React ?듯빀 (useRef + useEffect)
+- [ ] PptxGenJS PPT ?ㅼ슫濡쒕뱶 React ?곕룞
+- [ ] ?ㅽ겕紐⑤뱶 援ы쁽
 
 ### Phase 3
-- [ ] FastAPI 백엔드 구축
-- [ ] Claude API Copilot 실제 연동
-- [ ] SQLite → 실시간 데이터 연동
-- [ ] 사원명부 Excel 업로드 → 자동 파싱
+- [ ] FastAPI 諛깆뿏??援ъ텞
+- [ ] Claude API Copilot ?ㅼ젣 ?곕룞
+- [ ] SQLite ???ㅼ떆媛??곗씠???곕룞
+- [ ] ?ъ썝紐낅? Excel ?낅줈?????먮룞 ?뚯떛
 
 ### Phase 4
-- [ ] 인증/권한 (RBAC: CEO/부서장/실무)
+- [ ] ?몄쬆/沅뚰븳 (RBAC: CEO/遺?쒖옣/?ㅻТ)
 - [ ] GitHub Actions CI/CD
-- [ ] 5개년 트렌드 데이터 보강
-- [ ] 모바일 최적화
+- [ ] 5媛쒕뀈 ?몃젋???곗씠??蹂닿컯
+- [ ] 紐⑤컮??理쒖쟻??
 
 ---
 
-## 개발 컨벤션
+## 媛쒕컻 而⑤깽??
 
-### 브랜치 전략
+### 釉뚮옖移??꾨왂
 
-| 브랜치 | 용도 | 머지 대상 |
+| 釉뚮옖移?| ?⑸룄 | 癒몄? ???|
 |--------|------|-----------|
-| `main` | 프로덕션 (GitHub Pages 배포) | — |
-| `dev` | 개발 통합 | → main (안정화 후) |
-| `feature/*` | 기능 개발 | → dev |
-| `hotfix/*` | 긴급 수정 | → main + dev |
+| `main` | ?꾨줈?뺤뀡 (GitHub Pages 諛고룷) | ??|
+| `dev` | 媛쒕컻 ?듯빀 | ??main (?덉젙???? |
+| `feature/*` | 湲곕뒫 媛쒕컻 | ??dev |
+| `hotfix/*` | 湲닿툒 ?섏젙 | ??main + dev |
 
-- `main` 직접 커밋 금지 — PR을 통해서만 머지
-- 브랜치명 예시: `feature/dark-mode`, `feature/copilot-api`, `hotfix/chart-render-fix`
+- `main` 吏곸젒 而ㅻ컠 湲덉? ??PR???듯빐?쒕쭔 癒몄?
+- 釉뚮옖移섎챸 ?덉떆: `feature/dark-mode`, `feature/copilot-api`, `hotfix/chart-render-fix`
 
-### 커밋 메시지
+### 而ㅻ컠 硫붿떆吏
 
 ```
-[타입] 한글 요약 (50자 이내)
+[??? ?쒓? ?붿빟 (50???대궡)
 
-상세 설명 (필요 시)
+?곸꽭 ?ㅻ챸 (?꾩슂 ??
 ```
 
-| 타입 | 용도 |
+| ???| ?⑸룄 |
 |------|------|
-| `feat` | 새 기능 |
-| `fix` | 버그 수정 |
-| `refactor` | 리팩토링 (기능 변경 없음) |
-| `style` | CSS/UI 변경 |
-| `data` | 데이터 파일 추가/수정 |
-| `docs` | 문서 수정 |
-| `chore` | 빌드/설정 변경 |
+| `feat` | ??湲곕뒫 |
+| `fix` | 踰꾧렇 ?섏젙 |
+| `refactor` | 由ы뙥?좊쭅 (湲곕뒫 蹂寃??놁쓬) |
+| `style` | CSS/UI 蹂寃?|
+| `data` | ?곗씠???뚯씪 異붽?/?섏젙 |
+| `docs` | 臾몄꽌 ?섏젙 |
+| `chore` | 鍮뚮뱶/?ㅼ젙 蹂寃?|
 
-예시: `[feat] 다크모드 토글 구현`, `[fix] 조직도 트리 렌더링 오류 수정`
+?덉떆: `[feat] ?ㅽ겕紐⑤뱶 ?좉? 援ы쁽`, `[fix] 議곗쭅???몃━ ?뚮뜑留??ㅻ쪟 ?섏젙`
 
-### 코드 스타일
+### 肄붾뱶 ?ㅽ???
 
-- **컴포넌트**: React FC (함수형), PascalCase 파일명 (`WorkforceTab.jsx`)
-- **훅**: `use` 접두어, camelCase (`useFilteredData.js`)
-- **데이터**: camelCase 파일명 (`dashboardData.js`)
-- **상수**: UPPER_SNAKE_CASE (`ORG_TREE_DATA`)
-- **CSS**: CSS Variables 기반, BEM 불필요 (theme.css 중앙 관리)
-- **차트**: ChartCard 래퍼 사용, 직접 Canvas 조작 금지
-- **상태**: Zustand useStore 통해서만 글로벌 상태 관리
+- **而댄룷?뚰듃**: React FC (?⑥닔??, PascalCase ?뚯씪紐?(`WorkforceTab.jsx`)
+- **??*: `use` ?묐몢?? camelCase (`useFilteredData.js`)
+- **?곗씠??*: camelCase ?뚯씪紐?(`dashboardData.js`)
+- **?곸닔**: UPPER_SNAKE_CASE (`ORG_TREE_DATA`)
+- **CSS**: CSS Variables 湲곕컲, BEM 遺덊븘??(theme.css 以묒븰 愿由?
+- **李⑦듃**: ChartCard ?섑띁 ?ъ슜, 吏곸젒 Canvas 議곗옉 湲덉?
+- **?곹깭**: Zustand useStore ?듯빐?쒕쭔 湲濡쒕쾶 ?곹깭 愿由?
 
-### PR 프로세스
+### PR ?꾨줈?몄뒪
 
-1. `feature/*` 브랜치에서 작업
-2. `npm run build` 성공 확인
-3. PR 생성 → 변경 사항 요약 + 스크린샷 (UI 변경 시)
-4. `dev`로 머지 → 통합 테스트
-5. `dev` → `main` 머지 → GitHub Pages 자동 배포
+1. `feature/*` 釉뚮옖移섏뿉???묒뾽
+2. `npm run build` ?깃났 ?뺤씤
+3. PR ?앹꽦 ??蹂寃??ы빆 ?붿빟 + ?ㅽ겕由곗꺑 (UI 蹂寃???
+4. `dev`濡?癒몄? ???듯빀 ?뚯뒪??
+5. `dev` ??`main` 癒몄? ??GitHub Pages ?먮룞 諛고룷
 
-### 금지 사항
+### 湲덉? ?ы빆
 
-- `node_modules/`, `dist/` 커밋 금지 (.gitignore 관리)
-- 개인정보 포함 데이터(사원명부 원본, 급여 데이터) 커밋 절대 금지
-- API 키, 토큰 등 시크릿 하드코딩 금지
-- `console.log` 프로덕션 커밋 금지 (디버깅 후 제거)
+- `node_modules/`, `dist/` 而ㅻ컠 湲덉? (.gitignore 愿由?
+- 媛쒖씤?뺣낫 ?ы븿 ?곗씠???ъ썝紐낅? ?먮낯, 湲됱뿬 ?곗씠?? 而ㅻ컠 ?덈? 湲덉?
+- API ?? ?좏겙 ???쒗겕由??섎뱶肄붾뵫 湲덉?
+- `console.log` ?꾨줈?뺤뀡 而ㅻ컠 湲덉? (?붾쾭源????쒓굅)
 
 ---
 
-## 주의사항
+## 二쇱쓽?ы빆
 
-- 법인명: OK홀딩스 (OK금융지주 ✕), OKAX (OK아이에스 ✕)
-- 하위 조직 명칭: "파트" (팀 ✕)
-- 데이터 기준일: 2026-03-04 사원명부
-- 개인정보 포함 데이터는 커밋하지 않음
+- 踰뺤씤紐? OK??⑹뒪 (OK湲덉쑖吏二???, OKAX (OK?꾩씠?먯뒪 ??
+- ?섏쐞 議곗쭅 紐낆묶: "?뚰듃" (? ??
+- ?곗씠??湲곗??? 2026-03-04 ?ъ썝紐낅?
+- 媛쒖씤?뺣낫 ?ы븿 ?곗씠?곕뒗 而ㅻ컠?섏? ?딆쓬

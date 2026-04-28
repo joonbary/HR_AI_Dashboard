@@ -5,4 +5,20 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/HR_AI_Dashboard/',
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        dashboard: 'index.html',
+        personnel: 'apps/personnel-app/index.html',
+      },
+    },
+  },
 })

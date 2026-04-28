@@ -1,15 +1,12 @@
-import useStore from './store/useStore';
-import TopBar from './components/layout/TopBar';
-import FilterBar from './components/layout/FilterBar';
-import WorkforceTab from './components/tabs/WorkforceTab';
-import PerformanceTab from './components/tabs/PerformanceTab';
-import AITab from './components/tabs/AITab';
-import RiskTab from './components/tabs/RiskTab';
-import InsightsTab from './components/tabs/InsightsTab';
-import ExecTab from './components/tabs/ExecTab';
-import OrgTab from './components/tabs/OrgTab';
-import PersonnelTab from './components/tabs/PersonnelTab';
-import CopilotPanel from './components/copilot/CopilotPanel';
+﻿import { CopilotPanel, FilterBar, TopBar, useDashboardStore } from './features/hr-dashboard';
+import { useCopilotStore } from './shared/store';
+import WorkforceTab from './features/hr-dashboard/tabs/WorkforceTab';
+import PerformanceTab from './features/hr-dashboard/tabs/PerformanceTab';
+import AITab from './features/hr-dashboard/tabs/AITab';
+import RiskTab from './features/hr-dashboard/tabs/RiskTab';
+import InsightsTab from './features/hr-dashboard/tabs/InsightsTab';
+import ExecTab from './features/hr-dashboard/tabs/ExecTab';
+import OrgTab from './features/hr-dashboard/tabs/OrgTab';
 import './styles/theme.css';
 
 const TAB_COMPONENTS = {
@@ -20,11 +17,11 @@ const TAB_COMPONENTS = {
   insight: InsightsTab,
   exec: ExecTab,
   org: OrgTab,
-  personnel: PersonnelTab,
 };
 
 export default function App() {
-  const { activeTab, copilotOpen } = useStore();
+  const activeTab = useDashboardStore((s) => s.activeTab);
+  const copilotOpen = useCopilotStore((s) => s.copilotOpen);
   const ActiveComponent = TAB_COMPONENTS[activeTab] || WorkforceTab;
 
   return (

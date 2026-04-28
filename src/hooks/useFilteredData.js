@@ -1,37 +1,37 @@
-import { useMemo } from 'react';
-import useStore from '../store/useStore';
-import { D } from '../data/dashboardData';
+﻿import { useMemo } from 'react';
+import useDashboardStore from '../features/hr-dashboard/store/dashboardStore';
+import { dashboardData as D } from '../services/dashboard/dashboardDataModel';
 
 /**
- * 필터 상태에 따라 데이터를 가공하는 훅
+ * ?꾪꽣 ?곹깭???곕씪 ?곗씠?곕? 媛怨듯븯????
  */
 export function useFilteredData() {
-  const { company, year } = useStore();
+  const { company, year } = useDashboardStore();
 
   return useMemo(() => {
     const companies = company === 'ALL' ? D.companies : [company];
     const years = year === 'ALL' ? D.years : [Number(year)];
     const latestYear = year === 'ALL' ? D.years[D.years.length - 1] : Number(year);
 
-    // 인원 합산
+    // ?몄썝 ?⑹궛
     const totalHeadcount = companies.reduce((sum, co) => {
       return sum + (D.headcount[co]?.[latestYear] || 0);
     }, 0);
 
-    // 전년 대비
+    // ?꾨뀈 ?鍮?
     const prevYear = latestYear - 1;
     const prevHeadcount = companies.reduce((sum, co) => {
       return sum + (D.headcount[co]?.[prevYear] || 0);
     }, 0);
     const yoy = prevHeadcount > 0 ? ((totalHeadcount - prevHeadcount) / prevHeadcount * 100).toFixed(1) : 0;
 
-    // 이직률 (비율→퍼센트 변환)
+    // ?댁쭅瑜?(鍮꾩쑉?믫띁?쇳듃 蹂??
     const turnoverRaw = company === 'ALL'
       ? (D.turnover?.[latestYear] || 0)
       : (D.turnoverByCompany?.[company]?.[latestYear] || 0);
     const turnoverRate = (turnoverRaw * 100).toFixed(1);
 
-    // 인건비
+    // ?멸굔鍮?
     const totalLaborCost = companies.reduce((sum, co) => {
       return sum + (D.laborCost[co]?.[latestYear] || 0);
     }, 0);

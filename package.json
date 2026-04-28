@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:hr": "vite --open /HR_AI_Dashboard/",
+    "dev:personnel": "vite --open /HR_AI_Dashboard/apps/personnel-app/",
+    "copilot": "python copilot_server.py",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
