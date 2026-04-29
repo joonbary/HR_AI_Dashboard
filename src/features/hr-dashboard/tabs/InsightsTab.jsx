@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { dashboardData as D } from '../../../services/dashboard/dashboardDataModel';
 import { buildInsightsFeed } from '../../../services/insights/generateInsights';
+import useCopilotStore from '../../../shared/store/copilotStore';
 import {
   INSIGHT_CATEGORY_OPTIONS,
   INSIGHT_IMPORTANCE_COLORS,
@@ -31,6 +32,7 @@ function Badge({ text }) {
 
 export default function InsightsTab() {
   const [cat, setCat] = useState('전체');
+  const selectedInsightTraceId = useCopilotStore((s) => s.selectedInsightTraceId);
   const insights = useMemo(() => buildInsightsFeed(D), []);
 
   const filtered = useMemo(() => {
@@ -53,29 +55,45 @@ export default function InsightsTab() {
       </div>
 
       <ul className="insight-list">
-        {filtered.map((item) => (
-          <li key={item.id || `${item.date}-${item.title}`} className="insight-item">
-            <div className="insight-meta">
-              <span>{item.date}</span>
-              <span style={{ background: 'var(--accent-light)', padding: '1px 8px', borderRadius: 10, fontSize: 10 }}>
-                {CATEGORY_LABEL_MAP[item.cat] || item.cat}
-              </span>
-              <span style={{ color: INSIGHT_IMPORTANCE_COLORS[item.imp] || '#999', fontWeight: 600 }}>
-                중요도: {item.imp}
-              </span>
-            </div>
+        {filtered.map((item) => {
+          const isTraceHighlighted =
+            Boolean(selectedInsightTraceId) && item.trace_id === selectedInsightTraceId;
 
-            {(item.badges?.length > 0 || item.trace_id) && (
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
-                {item.badges?.map((badge) => <Badge key={`${item.id}-${badge}`} text={badge} />)}
-                {item.trace_id ? <Badge text={item.trace_id} /> : null}
+          return (
+            <li
+              key={item.id || `${item.date}-${item.title}`}
+              className="insight-item"
+              style={
+                isTraceHighlighted
+                  ? {
+                      border: '1px solid var(--accent)',
+                      boxShadow: '0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent)',
+                    }
+                  : undefined
+              }
+            >
+              <div className="insight-meta">
+                <span>{item.date}</span>
+                <span style={{ background: 'var(--accent-light)', padding: '1px 8px', borderRadius: 10, fontSize: 10 }}>
+                  {CATEGORY_LABEL_MAP[item.cat] || item.cat}
+                </span>
+                <span style={{ color: INSIGHT_IMPORTANCE_COLORS[item.imp] || '#999', fontWeight: 600 }}>
+                  중요도: {item.imp}
+                </span>
               </div>
-            )}
 
-            <div className="insight-title">{item.title}</div>
-            <div className="insight-body">{item.content}</div>
-          </li>
-        ))}
+              {(item.badges?.length > 0 || item.trace_id) && (
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
+                  {item.badges?.map((badge) => <Badge key={`${item.id}-${badge}`} text={badge} />)}
+                  {item.trace_id ? <Badge text={item.trace_id} /> : null}
+                </div>
+              )}
+
+              <div className="insight-title">{item.title}</div>
+              <div className="insight-body">{item.content}</div>
+            </li>
+          );
+        })}
         {filtered.length === 0 && (
           <li style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
             해당 카테고리 인사이트가 없습니다

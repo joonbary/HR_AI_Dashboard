@@ -21,18 +21,18 @@ import sys
 from urllib.parse import urlparse
 
 # ============================================================
-# ?ㅼ젙
+# Settings
 # ============================================================
 PORT = 8080
 DASHBOARD_FILE = "HR_Dashboard_v5.html"
 MODEL = "claude-sonnet-4-20250514"
 MAX_TOKENS = 2048
 
-# API ?? ?섍꼍蹂???곗꽑, ?놁쑝硫??꾨옒??吏곸젒 ?낅젰
+# API key is read from environment variable ANTHROPIC_API_KEY.
 API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 # ============================================================
-# HR ?쒖뒪???꾨＼?꾪듃 ??Claude?먭쾶 ??븷쨌?곗씠?걔룹쓳??洹쒖튃 遺??
+# System prompts by app scope.
 # ============================================================
 SYSTEM_PROMPT = """You are an HR analytics copilot for the dashboard application.
 Use only provided context data and clearly separate facts from inferences.
@@ -57,7 +57,7 @@ APP_SYSTEM_PROMPTS = {
 }
 
 # ============================================================
-# ?쒕쾭 ?몃뱾??
+# Server handler
 # ============================================================
 class CopilotHandler(http.server.SimpleHTTPRequestHandler):
 
@@ -85,7 +85,7 @@ class CopilotHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(404)
 
     def _handle_chat(self, app_scope='dashboard'):
-        # ?붿껌 ?뚯떛
+        # Parse request body
         length = int(self.headers.get('Content-Length', 0))
         body = json.loads(self.rfile.read(length)) if length > 0 else {}
         user_msg = body.get('message', '')
@@ -93,14 +93,16 @@ class CopilotHandler(http.server.SimpleHTTPRequestHandler):
         history = body.get('history', [])
 
         if not user_msg:
-            self._json_response(400, {'error': 'message ?꾨뱶 ?꾩닔'})
+            self._json_response(400, {'error': 'message field is required'})
             return
 
         if not API_KEY:
-            self._json_response(500, {'error': 'ANTHROPIC_API_KEY 誘몄꽕?? ?섍꼍蹂???먮뒗 copilot_server.py ??API_KEY???ㅼ젙 ?꾩슂'})
+            self._json_response(500, {
+                'error': 'ANTHROPIC_API_KEY is not configured. Set it in environment variables.'
+            })
             return
 
-        # Claude API ?몄텧
+        # Call Claude API
         try:
             import anthropic
             client = anthropic.Anthropic(api_key=API_KEY)
@@ -108,7 +110,7 @@ class CopilotHandler(http.server.SimpleHTTPRequestHandler):
             prompt_template = APP_SYSTEM_PROMPTS.get(app_scope, SYSTEM_PROMPT)
             system = prompt_template.replace('{dashboard_data}', dashboard_data)
 
-            # ????대젰 援ъ꽦 (理쒓렐 10??
+            # Build recent conversation history (up to last 10 messages)
             messages = []
             for h in history[-10:]:
                 messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
@@ -144,6 +146,20 @@ class CopilotHandler(http.server.SimpleHTTPRequestHandler):
                     'error': 'Rate limit exceeded. Retry after a short delay.',
                     'error_type': 'rate_limit'
                 })
+            elif (
+                'connection error' in err_msg.lower()
+                or 'name or service not known' in err_msg.lower()
+                or 'temporary failure in name resolution' in err_msg.lower()
+                or 'failed to establish a new connection' in err_msg.lower()
+                or 'nodename nor servname provided' in err_msg.lower()
+            ):
+                self._json_response(503, {
+                    'error': (
+                        'Network/DNS connection to Anthropic API failed. '
+                        'Check firewall, proxy, DNS allowlist, and outbound HTTPS access to api.anthropic.com.'
+                    ),
+                    'error_type': 'network'
+                })
             else:
                 self._json_response(500, {
                     'error': f'API call failed: {err_msg}',
@@ -152,21 +168,21 @@ class CopilotHandler(http.server.SimpleHTTPRequestHandler):
             sys.stderr.write(f"[Copilot Error] {err_msg}\n")
 
     def _handle_upload(self):
-        """?뚯씪 ?낅줈???몃뱾??(AXIS 3)"""
+        """File upload handler (AXIS 3)."""
         try:
-            # multipart/form-data ?뚯떛
+            # Parse multipart/form-data
             content_length = int(self.headers.get('Content-Length', 0))
             content_type = self.headers.get('Content-Type', '')
 
             if 'multipart/form-data' not in content_type:
-                self._json_response(400, {'error': 'multipart/form-data ?꾩슂'})
+                self._json_response(400, {'error': 'multipart/form-data is required'})
                 return
 
-            # 媛꾨떒???뚯씪 ???(?꾨줈?뺤뀡?먯꽌????寃ш퀬???뚯떛 ?꾩슂)
+            # Minimal payload handling (for production, robust multipart parsing is recommended)
             boundary = content_type.split('boundary=')[1].encode()
             body = self.rfile.read(content_length)
 
-            # ?뚯씪紐?異붿텧 (媛꾨떒??諛⑹떇)
+            # Extract filename (simple fallback strategy)
             filename = 'uploaded_' + str(os.getpid()) + '.xlsx'
             temp_dir = os.path.join(os.getcwd(), 'uploads')
             if not os.path.exists(temp_dir):
@@ -180,12 +196,12 @@ class CopilotHandler(http.server.SimpleHTTPRequestHandler):
                 'success': True,
                 'filename': filename,
                 'filepath': filepath,
-                'message': '?뚯씪 ?낅줈???꾨즺'
+                'message': 'File uploaded successfully'
             })
             sys.stderr.write(f"[Upload] {filename} saved to {filepath}\n")
 
         except Exception as e:
-            self._json_response(500, {'error': f'?낅줈???ㅽ뙣: {str(e)}'})
+            self._json_response(500, {'error': f'Upload failed: {str(e)}'})
             sys.stderr.write(f"[Upload Error] {str(e)}\n")
 
     def _json_response(self, code, data):
@@ -205,13 +221,13 @@ class CopilotHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
     def log_message(self, format, *args):
-        # 濡쒓렇 媛꾩냼??
+        # Reduce noisy logs
         if '/api/chat' in str(args):
             sys.stderr.write(f"[Copilot] {args[0]}\n")
 
 
 # ============================================================
-# 硫붿씤
+# Main
 # ============================================================
 if __name__ == '__main__':
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
